@@ -7,6 +7,39 @@ if identifyexecutor then
 	end
 end
 
+local function getHWID()
+    local hwid = nil
+    
+    if gethwid then
+        hwid = gethwid()
+    elseif getexecutorname then
+        local executor_name = getexecutorname()
+        local unique_str = executor_name .. tostring(game:GetService("UserInputService"):GetGamepadState(Enum.UserInputType.Gamepad1))
+        hwid = game:GetService("HttpService"):GenerateGUID(false)
+        
+        if syn and syn.crypt and syn.crypt.hash then
+            hwid = syn.crypt.hash(unique_str)
+        elseif crypt and crypt.hash then
+            hwid = crypt.hash(unique_str)
+        end
+    end
+    
+    if not hwid and game:GetService("RbxAnalyticsService") then
+        local success, result = pcall(function()
+            return game:GetService("RbxAnalyticsService"):GetClientId()
+        end)
+        if success and result then
+            hwid = result
+        end
+    end
+    
+    if not hwid then
+        hwid = tostring(math.random(100000, 999999)) .. tostring(os.time())
+    end
+    
+    return hwid
+end
+
 local function validateSecurity()
     local HttpService = game:GetService("HttpService")
     
@@ -33,10 +66,20 @@ local function validateSecurity()
         return false, nil
     end
     
-    if not validationData.username or not validationData.repo_owner or not validationData.repo_name or not validationData.validated then
+    if not validationData.username or not validationData.repo_owner or not validationData.repo_name or not validationData.validated or not validationData.hwid then
         game.StarterGui:SetCore("SendNotification", {
             Title = "Security Error",
             Text = "invalid validation data",
+            Duration = 5
+        })
+        return false, nil
+    end
+    
+    local currentHWID = getHWID()
+    if currentHWID ~= validationData.hwid then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "hwid mismatch",
+            Text = "device hwid does not match stored hwid",
             Duration = 5
         })
         return false, nil
@@ -90,10 +133,12 @@ local function validateSecurity()
     
     local accountValid = false
     local accountActive = false
+    local accountHWID = nil
     for _, account in pairs(accounts) do
         if account.Username == validationData.username then
             accountValid = true
             accountActive = account.IsActive == true
+            accountHWID = account.HWID
             break
         end
     end
@@ -111,6 +156,24 @@ local function validateSecurity()
         game.StarterGui:SetCore("SendNotification", {
             Title = "account inactive",
             Text = "your account is currently inactive",
+            Duration = 5
+        })
+        return false, nil
+    end
+    
+    if not accountHWID or accountHWID == "" or accountHWID == "your-hwid-here" or accountHWID:find("hwid-here") then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "no hwid set",
+            Text = "your account has no hwid set. contact aero",
+            Duration = 10
+        })
+        return false, nil
+    end
+    
+    if currentHWID ~= accountHWID then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "hwid mismatch",
+            Text = "this device is not authorized for this account",
             Duration = 5
         })
         return false, nil
@@ -183,8 +246,13 @@ local function checkAccountActive()
         return true 
     end
     
+    local currentHWID = getHWID()
+    
     for _, account in pairs(accounts) do
         if account.Username == shared.ValidatedUsername then
+            if account.HWID and account.HWID ~= currentHWID then
+                return false
+            end
             return account.IsActive == true
         end
     end
@@ -203,7 +271,7 @@ local function startActiveCheck()
             if not isActive then
                 game.StarterGui:SetCore("SendNotification", {
                     Title = "access taken away",
-                    Text = "your account has been deactivated",
+                    Text = "your account has been deactivated or hwid changed",
                     Duration = 5
                 })
                 
