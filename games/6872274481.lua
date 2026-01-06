@@ -8445,19 +8445,19 @@ run(function()
             if not Targets.Players.Enabled and ent.Player then return end
             if not Targets.NPCs.Enabled and ent.NPC then return end
             if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-    
+            
             local nametag = Instance.new('TextLabel')
             Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-    
+            
             if Health.Enabled then
                 local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-                Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(healthColor.R * 255))..','..tostring(math.floor(healthColor.G * 255))..','..tostring(math.floor(healthColor.B * 255))..')">'..math.round(ent.Health)..'</font>'
+                Strings[ent] = Strings[ent]..' '..math.round(ent.Health)..''
             end
-    
+            
             if Distance.Enabled then
-                Strings[ent] = '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '..Strings[ent]
+                Strings[ent] = '[%s] '..Strings[ent]
             end
-    
+            
             if Equipment.Enabled then
                 for i, v in {'Hand', 'Helmet', 'Chestplate', 'Boots', 'Kit'} do
                     local Icon = Instance.new('ImageLabel')
@@ -8474,10 +8474,12 @@ run(function()
                 local kitIcon = Instance.new('ImageLabel')
                 kitIcon.Name = 'KitIcon'
                 kitIcon.Size = UDim2.fromOffset(30, 30)
-                kitIcon.Position = UDim2.fromOffset(0, -35)
+                kitIcon.AnchorPoint = Vector2.new(0.5, 0)
+                kitIcon.Position = UDim2.new(0.5, 0, 0, -35)
                 kitIcon.BackgroundTransparency = 1
                 kitIcon.Image = ''
                 kitIcon.Parent = nametag
+                
                 local kit = ent.Player:GetAttribute('PlayingAsKits')
                 if kit then
                     local kitImage = kitImageIds[kit:lower()]
@@ -8490,12 +8492,12 @@ run(function()
                     kitIcon.Image = kitImageIds["none"]
                 end
             end
-    
+            
             nametag.TextSize = 14 * Scale.Value
             nametag.FontFace = FontOption.Value
             local size = getfontsize(removeTags(Strings[ent]), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
             nametag.Name = ent.Player and ent.Player.Name or ent.Character.Name
-            nametag.Size = UDim2.fromOffset(size.X + 8 + (ShowKits.Enabled and 35 or 0), size.Y + 7)
+            nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
             nametag.AnchorPoint = Vector2.new(0.5, 1)
             nametag.BackgroundColor3 = Color3.new()
             nametag.BackgroundTransparency = Background.Value
@@ -8511,25 +8513,23 @@ run(function()
             if not Targets.Players.Enabled and ent.Player then return end
             if not Targets.NPCs.Enabled and ent.NPC then return end
             if Teammates.Enabled and (not ent.Targetable) and (not ent.Friend) then return end
-    
+            
             local nametag = {}
             nametag.BG = Drawing.new('Square')
             nametag.BG.Filled = true
             nametag.BG.Transparency = 1 - Background.Value
             nametag.BG.Color = Color3.new()
             nametag.BG.ZIndex = 1
-            
             nametag.Text = Drawing.new('Text')
             nametag.Text.Size = 15 * Scale.Value
             nametag.Text.Font = 0
             nametag.Text.ZIndex = 2
-            
             Strings[ent] = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-    
+            
             if Health.Enabled then
                 Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
             end
-    
+            
             if Distance.Enabled then
                 Strings[ent] = '[%s] '..Strings[ent]
             end
@@ -8541,7 +8541,7 @@ run(function()
                     Strings[ent] = Strings[ent]..' ('..kitName..')'
                 end
             end
-    
+            
             nametag.Text.Text = Strings[ent]
             nametag.Text.Color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
             nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
@@ -8581,18 +8581,18 @@ run(function()
             if nametag then
                 Sizes[ent] = nil
                 Strings[ent] = ent.Player and whitelist:tag(ent.Player, true, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-    
+                
                 if Health.Enabled then
                     local healthColor = Color3.fromHSV(math.clamp(ent.Health / ent.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
-                    Strings[ent] = Strings[ent]..' <font color="rgb('..tostring(math.floor(healthColor.R * 255))..','..tostring(math.floor(healthColor.G * 255))..','..tostring(math.floor(healthColor.B * 255))..')">'..math.round(ent.Health)..'</font>'
+                    Strings[ent] = Strings[ent]..' '..math.round(ent.Health)..''
                 end
-    
+                
                 if Distance.Enabled then
-                    Strings[ent] = '<font color="rgb(85, 255, 85)">[</font><font color="rgb(255, 255, 255)">%s</font><font color="rgb(85, 255, 85)">]</font> '..Strings[ent]
+                    Strings[ent] = '[%s] '..Strings[ent]
                 end
-    
+                
                 if Equipment.Enabled and ent.Player and store.inventories[ent.Player] then
-                    local kit = ent.Player:GetAttribute('PlayingAsKits') 
+                    local kit = ent.Player:GetAttribute('PlayingAsKits')
                     local inventory = store.inventories[ent.Player]
                     nametag.Hand.Image = bedwars.getIcon(inventory.hand or {itemType = ''}, true)
                     nametag.Helmet.Image = bedwars.getIcon(inventory.armor[4] or {itemType = ''}, true)
@@ -8600,25 +8600,23 @@ run(function()
                     nametag.Boots.Image = bedwars.getIcon(inventory.armor[6] or {itemType = ''}, true)
                     nametag.Kit.Image = kit and kit ~= 'none' and bedwars.BedwarsKitMeta[kit].renderImage or ''
                 end
-    
+                
                 local size = getfontsize(removeTags(Strings[ent]), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-                nametag.Size = UDim2.fromOffset(size.X + 8 + (ShowKits.Enabled and 35 or 0), size.Y + 7)
+                nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
                 nametag.Text = Strings[ent]
             end
         end,
         Drawing = function(ent)
             local nametag = Reference[ent]
             if nametag then
-                if vape.ThreadFix then
-                    setthreadidentity(8)
-                end
+                if vape.ThreadFix then setthreadidentity(8) end
                 Sizes[ent] = nil
                 Strings[ent] = ent.Player and whitelist:tag(ent.Player, true)..(DisplayName.Enabled and ent.Player.DisplayName or ent.Player.Name) or ent.Character.Name
-    
+                
                 if Health.Enabled then
                     Strings[ent] = Strings[ent]..' '..math.round(ent.Health)
                 end
-    
+                
                 if Distance.Enabled then
                     Strings[ent] = '[%s] '..Strings[ent]
                     nametag.Text.Text = entitylib.isAlive and string.format(Strings[ent], math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude)) or Strings[ent]
@@ -8627,13 +8625,13 @@ run(function()
                 end
                 
                 if ShowKits.Enabled and ent.Player then
-                    local kit = ent.Player:GetAttribute('PlayingAsKits') 
+                    local kit = ent.Player:GetAttribute('PlayingAsKits')
                     if kit then
                         local kitName = kit:gsub("_", " "):gsub("^%l", string.upper)
                         nametag.Text.Text = nametag.Text.Text..' ('..kitName..')'
                     end
                 end
-    
+                
                 nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
                 nametag.Text.Color = entitylib.getEntityColor(ent) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
             end
@@ -8665,19 +8663,17 @@ run(function()
                         continue
                     end
                 end
-    
+                
                 local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
                 nametag.Visible = headVis
-                if not headVis then
-                    continue
-                end
-    
+                if not headVis then continue end
+                
                 if Distance.Enabled then
                     local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
                     if Sizes[ent] ~= mag then
                         nametag.Text = string.format(Strings[ent], mag)
                         local size = getfontsize(removeTags(nametag.Text), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
-                        nametag.Size = UDim2.fromOffset(size.X + 8 + (ShowKits.Enabled and 35 or 0), size.Y + 7)
+                        nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
                         Sizes[ent] = mag
                     end
                 end
@@ -8685,9 +8681,7 @@ run(function()
                 if ShowKits.Enabled and ent.Player then
                     local kitIcon = nametag:FindFirstChild('KitIcon')
                     if kitIcon then
-                        kitIcon.Position = UDim2.fromOffset(0, -35)
-                        
-                        local kit = ent.Player:GetAttribute('PlayingAsKits') 
+                        local kit = ent.Player:GetAttribute('PlayingAsKits')
                         if kit then
                             local kitImage = kitImageIds[kit:lower()]
                             if kitImage and kitIcon.Image ~= kitImage then
@@ -8714,14 +8708,12 @@ run(function()
                         continue
                     end
                 end
-    
+                
                 local headPos, headVis = gameCamera:WorldToViewportPoint(ent.RootPart.Position + Vector3.new(0, ent.HipHeight + 1, 0))
                 nametag.Text.Visible = headVis
                 nametag.BG.Visible = headVis
-                if not headVis then
-                    continue
-                end
-    
+                if not headVis then continue end
+                
                 if Distance.Enabled then
                     local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - ent.RootPart.Position).Magnitude) or 0
                     if Sizes[ent] ~= mag then
@@ -8730,6 +8722,7 @@ run(function()
                         Sizes[ent] = mag
                     end
                 end
+                
                 nametag.BG.Position = Vector2.new(headPos.X - (nametag.BG.Size.X / 2), headPos.Y - nametag.BG.Size.Y)
                 nametag.Text.Position = nametag.BG.Position + Vector2.new(4, 3)
             end
@@ -8741,34 +8734,35 @@ run(function()
         Function = function(callback)
             if callback then
                 methodused = DrawingToggle.Enabled and 'Drawing' or 'Normal'
+                
                 if Removed[methodused] then
                     NameTags:Clean(entitylib.Events.EntityRemoved:Connect(Removed[methodused]))
                 end
+                
                 if Added[methodused] then
                     for _, v in entitylib.List do
-                        if Reference[v] then
-                            Removed[methodused](v)
-                        end
+                        if Reference[v] then Removed[methodused](v) end
                         Added[methodused](v)
                     end
                     NameTags:Clean(entitylib.Events.EntityAdded:Connect(function(ent)
-                        if Reference[ent] then
-                            Removed[methodused](ent)
-                        end
+                        if Reference[ent] then Removed[methodused](ent) end
                         Added[methodused](ent)
                     end))
                 end
+                
                 if Updated[methodused] then
                     NameTags:Clean(entitylib.Events.EntityUpdated:Connect(Updated[methodused]))
                     for _, v in entitylib.List do
                         Updated[methodused](v)
                     end
                 end
+                
                 if ColorFunc[methodused] then
                     NameTags:Clean(vape.Categories.Friends.ColorUpdate.Event:Connect(function()
                         ColorFunc[methodused](Color.Hue, Color.Sat, Color.Value)
                     end))
                 end
+                
                 if Loop[methodused] then
                     NameTags:Clean(runService.RenderStepped:Connect(Loop[methodused]))
                 end
@@ -8782,6 +8776,7 @@ run(function()
         end,
         Tooltip = 'Renders nametags on entities through walls.'
     })
+    
     Targets = NameTags:CreateTargets({
         Players = true,
         Function = function()
@@ -8791,6 +8786,7 @@ run(function()
             end
         end
     })
+    
     FontOption = NameTags:CreateFont({
         Name = 'Font',
         Blacklist = 'Arial',
@@ -8801,6 +8797,7 @@ run(function()
             end
         end
     })
+    
     Color = NameTags:CreateColorSlider({
         Name = 'Player Color',
         Function = function(hue, sat, val)
@@ -8809,6 +8806,7 @@ run(function()
             end
         end
     })
+    
     Scale = NameTags:CreateSlider({
         Name = 'Scale',
         Function = function()
@@ -8822,6 +8820,7 @@ run(function()
         Max = 1.5,
         Decimal = 10
     })
+    
     Background = NameTags:CreateSlider({
         Name = 'Transparency',
         Function = function()
@@ -8835,6 +8834,7 @@ run(function()
         Max = 1,
         Decimal = 10
     })
+    
     Health = NameTags:CreateToggle({
         Name = 'Health',
         Function = function()
@@ -8844,6 +8844,7 @@ run(function()
             end
         end
     })
+    
     Distance = NameTags:CreateToggle({
         Name = 'Distance',
         Function = function()
@@ -8853,6 +8854,7 @@ run(function()
             end
         end
     })
+    
     Equipment = NameTags:CreateToggle({
         Name = 'Equipment',
         Function = function()
@@ -8862,6 +8864,7 @@ run(function()
             end
         end
     })
+    
     ShowKits = NameTags:CreateToggle({
         Name = 'Show Kits',
         Function = function()
@@ -8872,6 +8875,7 @@ run(function()
         end,
         Tooltip = 'Shows player kits with icons in nametags'
     })
+    
     DisplayName = NameTags:CreateToggle({
         Name = 'Use Displayname',
         Function = function()
@@ -8882,6 +8886,7 @@ run(function()
         end,
         Default = true
     })
+    
     Teammates = NameTags:CreateToggle({
         Name = 'Priority Only',
         Function = function()
@@ -8892,6 +8897,7 @@ run(function()
         end,
         Default = true
     })
+    
     DrawingToggle = NameTags:CreateToggle({
         Name = 'Drawing',
         Function = function()
@@ -8901,12 +8907,14 @@ run(function()
             end
         end,
     })
+    
     DistanceCheck = NameTags:CreateToggle({
         Name = 'Distance Check',
         Function = function(callback)
             DistanceLimit.Object.Visible = callback
         end
     })
+    
     DistanceLimit = NameTags:CreateTwoSlider({
         Name = 'Player Distance',
         Min = 0,
