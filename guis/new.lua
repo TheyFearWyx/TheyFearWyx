@@ -1,3 +1,4 @@
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local mainapi = {
 	Categories = {},
 	GUIColor = {
@@ -5778,9 +5779,20 @@ mainapi:CreateCategory({
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
+	Name = 'Legit',
+	Icon = getcustomasset('newvape/assets/new/legit.png'),
+	Size = UDim2.fromOffset(24,16),
+	Position = UDim2.fromOffset(10,13)
+})
+mainapi:CreateCategory({
 	Name = 'Utility',
 	Icon = getcustomasset('newvape/assets/new/utilityicon.png'),
 	Size = UDim2.fromOffset(15, 14)
+})
+mainapi:CreateCategory({
+	Name = 'BoostFPS',
+	Icon = getcustomasset('newvape/assets/new/vape.png'),
+	Size = UDim2.fromOffset(20, 18)
 })
 mainapi:CreateCategory({
 	Name = 'World',
