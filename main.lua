@@ -1,4 +1,3 @@
-
 repeat task.wait() until game:IsLoaded()
 if shared.vape then shared.vape:Uninject() end
 
@@ -44,43 +43,10 @@ end
 local function validateSecurity()
     local HttpService = game:GetService("HttpService")
     
-    local function getCurrentHWID()
-        local hwid = nil
-        
-        if gethwid then
-            hwid = gethwid()
-        elseif getexecutorname then
-            local executor_name = getexecutorname()
-            local unique_str = executor_name .. tostring(game:GetService("UserInputService"):GetGamepadState(Enum.UserInputType.Gamepad1))
-            hwid = game:GetService("HttpService"):GenerateGUID(false)
-            
-            if syn and syn.crypt and syn.crypt.hash then
-                hwid = syn.crypt.hash(unique_str)
-            elseif crypt and crypt.hash then
-                hwid = crypt.hash(unique_str)
-            end
-        end
-        
-        if not hwid and game:GetService("RbxAnalyticsService") then
-            local success, result = pcall(function()
-                return game:GetService("RbxAnalyticsService"):GetClientId()
-            end)
-            if success and result then
-                hwid = result
-            end
-        end
-        
-        if not hwid then
-            hwid = tostring(math.random(100000, 999999)) .. tostring(os.time())
-        end
-        
-        return hwid
-    end
-    
     if not isfile('newvape/security/validated') then
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Security Error",
-            Text = "please use right log in first",
+            Title = "error",
+            Text = "no validation file found",
             Duration = 5
         })
         return false, nil
@@ -92,46 +58,28 @@ local function validateSecurity()
     end)
     
     if not success or not validationData then
-        for _, file in listfiles('newvape/security') do
-            if isfile(file) then
-                delfile(file)
-            end
-        end
-        
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Security Error",
-            Text = "corrupted validation try to log in again",
+            Title = "error",
+            Text = "corrupted validation file",
             Duration = 5
         })
         return false, nil
     end
     
-    if not validationData.username or not validationData.hwid then
-        for _, file in listfiles('newvape/security') do
-            if isfile(file) then
-                delfile(file)
-            end
-        end
-        
+    if not validationData.username or not validationData.repo_owner or not validationData.repo_name or not validationData.validated or not validationData.hwid then
         game.StarterGui:SetCore("SendNotification", {
             Title = "Security Error",
-            Text = "invalid validation info",
+            Text = "invalid validation data",
             Duration = 5
         })
         return false, nil
     end
     
-    local currentHWID = getCurrentHWID()
-    if validationData.hwid ~= currentHWID then
-        for _, file in listfiles('newvape/security') do
-            if isfile(file) then
-                delfile(file)
-            end
-        end
-        
+    local currentHWID = getHWID()
+    if currentHWID ~= validationData.hwid then
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Security Error",
-            Text = "hwid not recognized try to log in again",
+            Title = "hwid mismatch",
+            Text = "device hwid does not match stored hwid",
             Duration = 5
         })
         return false, nil
@@ -139,8 +87,8 @@ local function validateSecurity()
     
     if not isfile('newvape/security/'..validationData.username) then
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Security Error",
-            Text = "user info missing",
+            Title = "error",
+            Text = "user validation missing",
             Duration = 5
         })
         return false, nil
@@ -149,15 +97,13 @@ local function validateSecurity()
     local EXPECTED_REPO_OWNER = "poopparty"
     local EXPECTED_REPO_NAME = "poopparty"
     
-    if validationData.repo_owner and validationData.repo_name then
-        if validationData.repo_owner ~= EXPECTED_REPO_OWNER or validationData.repo_name ~= EXPECTED_REPO_NAME then
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "Security Error",
-                Text = "wrong repo",
-                Duration = 5
-            })
-            return false, nil
-        end
+    if validationData.repo_owner ~= EXPECTED_REPO_OWNER or validationData.repo_name ~= EXPECTED_REPO_NAME then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "error",
+            Text = "unauthorized repository detected",
+            Duration = 5
+        })
+        return false, nil
     end
     
     local ACCOUNT_SYSTEM_URL = "https://raw.githubusercontent.com/poopparty/whitelistcheck/main/AccountSystem.lua"
@@ -178,8 +124,8 @@ local function validateSecurity()
     local accounts = fetchAccounts()
     if not accounts then
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Connection Error",
-            Text = "cant verify account status",
+            Title = "error",
+            Text = "failed to verify account status",
             Duration = 5
         })
         return false, nil
@@ -199,8 +145,8 @@ local function validateSecurity()
     
     if not accountValid then
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Access Taken",
-            Text = "your account is no longer authorized",
+            Title = "access taken away",
+            Text = "your account is no longer allowed to use the script",
             Duration = 5
         })
         return false, nil
@@ -208,17 +154,26 @@ local function validateSecurity()
     
     if not accountActive then
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Account Inactive",
+            Title = "account inactive",
             Text = "your account is currently inactive",
             Duration = 5
         })
         return false, nil
     end
     
-    if accountHWID and currentHWID ~= accountHWID then
+    if not accountHWID or accountHWID == "" or accountHWID == "your-hwid-here" or accountHWID:find("hwid-here") then
         game.StarterGui:SetCore("SendNotification", {
-            Title = "Security Error",
-            Text = "hwid mismatch",
+            Title = "no hwid set",
+            Text = "your account has no hwid set. contact aero",
+            Duration = 10
+        })
+        return false, nil
+    end
+    
+    if currentHWID ~= accountHWID then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "hwid mismatch",
+            Text = "this device is not authorized for this account",
             Duration = 5
         })
         return false, nil
@@ -291,8 +246,13 @@ local function checkAccountActive()
         return true 
     end
     
+    local currentHWID = getHWID()
+    
     for _, account in pairs(accounts) do
         if account.Username == shared.ValidatedUsername then
+            if account.HWID and account.HWID ~= currentHWID then
+                return false
+            end
             return account.IsActive == true
         end
     end
@@ -310,8 +270,8 @@ local function startActiveCheck()
             
             if not isActive then
                 game.StarterGui:SetCore("SendNotification", {
-                    Title = "Access Taken",
-                    Text = "your account has been deactivated.",
+                    Title = "access taken away",
+                    Text = "your account has been deactivated or hwid changed",
                     Duration = 5
                 })
                 
@@ -376,7 +336,7 @@ local function finishLoading()
 	if not shared.vapereload then
 		if not vape.Categories then return end
 		if vape.Categories.Main.Options['GUI bind indicator'].Enabled then
-			vape:CreateNotification('Finished Loading', 'wsg, '..shared.ValidatedUsername..'! '..(vape.VapeButton and 'Press the button in the top right to open GUI' or 'Press '..table.concat(vape.Keybind, ' + '):upper()..' to open GUI'), 5)
+			vape:CreateNotification('Finished Loading', 'Welcome, '..shared.ValidatedUsername..'! '..(vape.VapeButton and 'Press the button in the top right to open GUI' or 'Press '..table.concat(vape.Keybind, ' + '):upper()..' to open GUI'), 5)
 		end
 	end
 end
