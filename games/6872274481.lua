@@ -4282,9 +4282,10 @@ run(function()
                                         end
                                     end
 
-                                    local canHit = delta.Magnitude <= AttackRange.Value
+									local canHit = delta.Magnitude <= AttackRange.Value
+									local extendedRangeCheck = delta.Magnitude <= (AttackRange.Value + 3) 
 
-                                    if not canHit then continue end
+									if not canHit and not extendedRangeCheck then continue end
 
                                     if SyncHits.Enabled then
                                         local swingSpeed = SwingTime.Enabled and SwingTimeSlider.Value or (meta.sword.respectAttackSpeedForEffects and meta.sword.attackSpeed or 0.42)
