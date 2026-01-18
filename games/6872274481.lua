@@ -1,6 +1,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -1263,42 +1264,68 @@ run(function()
 		if not (lplr.Character and lplr.Character:FindFirstChild("Head")) then return nil end
 		return (lplr.Character.Head.Position - gameCamera.CFrame.Position).Magnitude < 2
 	end
-	
 	local function hasValidWeapon()
 		if not store.hand or not store.hand.tool then return false end
 		local toolType = store.hand.toolType
 		local toolName = store.hand.tool.Name:lower()
-		if toolName:find('headhunter') then return true end
+		if toolName:find('headhunter') then
+			return true
+		end
 		return toolType == 'sword' or toolType == 'bow' or toolType == 'crossbow'
 	end
 	
 	local function isHoldingProjectile()
 		if not store.hand or not store.hand.tool then return false end
 		local toolName = store.hand.tool.Name
-		if toolName == "headhunter" or toolName:lower():find("headhunter") then return true end
-		if toolName:lower():find("bow") or toolName:lower():find("crossbow") then return true end
+		if toolName == "headhunter" then
+			return true
+		end
+		if toolName:lower():find("headhunter") then
+			return true
+		end
+		if toolName:lower():find("bow") then
+			return true
+		end
+		if toolName:lower():find("crossbow") then
+			return true
+		end
 		local toolMeta = bedwars.ItemMeta[toolName]
-		if toolMeta and toolMeta.projectileSource then return true end
+		if toolMeta and toolMeta.projectileSource then
+			return true
+		end
 		return false
 	end
 	
-	local AimAssist, Targets, Sort, AimSpeed, Distance, AngleSlider, StrafeMultiplier
-	local KillauraTarget, ClickAim, ShopCheck, FirstPersonCheck, VerticalAim, VerticalOffset
-	local AimPart, ProjectileMode, ProjectileAimSpeed, ProjectileDistance, ProjectileAngle
-	local WorkWithAllItems, PriorityMode, AdaptiveSpeed
+	local AimAssist
+	local Targets
+	local Sort
+	local AimSpeed
+	local Distance
+	local AngleSlider
+	local StrafeMultiplier
+	local KillauraTarget
+	local ClickAim
+	local ShopCheck
+	local FirstPersonCheck
+	local VerticalAim
+	local VerticalOffset
+	local AimPart
+	local ProjectileMode
+	local ProjectileAimSpeed
+	local ProjectileDistance
+	local ProjectileAngle
+	local WorkWithAllItems
+	local PriorityMode
 	
 	local rayCheck = RaycastParams.new()
 	rayCheck.FilterType = Enum.RaycastFilterType.Include
 	rayCheck.FilterDescendantsInstances = {workspace:FindFirstChild('Map') or workspace}
 	
 	local lockedTarget = nil
-	local lastTargetPos = nil
-	local smoothVelocity = Vector3.new(0, 0, 0)
 	
-	local function isTargetValid(ent, currentDistance)
+	local function isTargetValid(ent, currentDistance, holdingProjectile)
 		if not ent or not ent.RootPart or not ent.Character then return false end
 		if not entitylib.isAlive then return false end
-		
 		local distance = (ent.RootPart.Position - entitylib.character.RootPart.Position).Magnitude
 		if distance > currentDistance then return false end
 		
@@ -1317,229 +1344,203 @@ run(function()
 		return true
 	end
 	
-	local function getProjectileParams()
-		local projSpeed = 100
-		local gravity = 196.2
-		
-		if store.hand and store.hand.tool then
-			local toolMeta = bedwars.ItemMeta[store.hand.tool.Name]
-			if toolMeta and toolMeta.projectileSource then
-				local projectileType = toolMeta.projectileSource.projectileType
-				
-				if type(projectileType) == "function" then
-					local success, result = pcall(projectileType, nil)
-					if success then
-						projectileType = result
-					else
-						success, result = pcall(projectileType, 'arrow')
-						if success then projectileType = result end
-					end
-				end
-				
-				if projectileType and bedwars.ProjectileMeta[projectileType] then
-					local projectileMeta = bedwars.ProjectileMeta[projectileType]
-					projSpeed = projectileMeta.launchVelocity or projectileMeta.speed or 100
-					gravity = projectileMeta.gravitationalAcceleration or 196.2
-				end
-			end
-		end
-		
-		return projSpeed, gravity
-	end
-	
-	local function getTargetGravity(ent)
-		local balloons = ent.Character:GetAttribute('InflatedBalloons')
-		local playerGravity = workspace.Gravity
-		
-		if balloons and balloons > 0 then
-			playerGravity = workspace.Gravity * (1 - (balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))
-		end
-		
-		if ent.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
-			playerGravity = 6
-		end
-		
-		if ent.Player and ent.Player:GetAttribute('IsOwlTarget') then
-			for _, owl in collectionService:GetTagged('Owl') do
-				if owl:GetAttribute('Target') == ent.Player.UserId and owl:GetAttribute('Status') == 2 then
-					playerGravity = 0
-					break
-				end
-			end
-		end
-		
-		return playerGravity
-	end
-	
-	local function smoothLerp(current, target, speed, dt)
-		local distance = (target.Position - current.Position).Magnitude
-		local dynamicSpeed = speed
-		
-		if AdaptiveSpeed.Enabled then
-			if distance > 50 then
-				dynamicSpeed = speed * 1.5
-			elseif distance < 10 then
-				dynamicSpeed = speed * 0.7
-			end
-		end
-		
-		local alpha = 1 - math.exp(-dynamicSpeed * dt * 10)
-		return current:Lerp(target, alpha)
-	end
-	
 	AimAssist = vape.Categories.Combat:CreateModule({
 		Name = 'AimAssist',
 		Function = function(callback)
 			if callback then
-				AimAssist:Clean(runService.RenderStepped:Connect(function(dt)
+				AimAssist:Clean(runService.Heartbeat:Connect(function(dt)
 					local validWeaponCheck = WorkWithAllItems.Enabled or hasValidWeapon()
 					
-					if not (entitylib.isAlive and validWeaponCheck) then
+					if not (entitylib.isAlive and validWeaponCheck and ((not ClickAim.Enabled) or (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) < 0.4)) then
 						lockedTarget = nil
-						lastTargetPos = nil
-						smoothVelocity = Vector3.new(0, 0, 0)
 						return
 					end
 					
-					if ClickAim.Enabled and (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) >= 0.4 then
-						return
-					end
-					
-					if FirstPersonCheck.Enabled and not isFirstPerson() then return end
-					
-					if ShopCheck.Enabled then
-						local isShop = lplr:FindFirstChild("PlayerGui") and lplr:FindFirstChild("PlayerGui"):FindFirstChild("ItemShop")
-						if isShop then return end
-					end
-					
-					local holdingProjectile = isHoldingProjectile()
-					local useProjectileMode = ProjectileMode.Enabled and holdingProjectile
-					local currentDistance = useProjectileMode and ProjectileDistance.Value or Distance.Value
-					local currentAngle = useProjectileMode and ProjectileAngle.Value or AngleSlider.Value
-					local ent = nil
-					
-					if PriorityMode.Enabled then
-						if lockedTarget and isTargetValid(lockedTarget, currentDistance) then
-							local delta = (lockedTarget.RootPart.Position - entitylib.character.RootPart.Position)
-							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-							local angle = math.acos(math.clamp(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit), -1, 1))
-							
-							if angle < (math.rad(currentAngle) / 2) then
-								ent = lockedTarget
+					if entitylib.isAlive and validWeaponCheck and ((not ClickAim.Enabled) or (workspace:GetServerTimeNow() - bedwars.SwordController.lastAttack) < 0.4) then
+						if FirstPersonCheck.Enabled and not isFirstPerson() then return end
+						
+						if ShopCheck.Enabled then
+							local isShop = lplr:FindFirstChild("PlayerGui") and lplr:FindFirstChild("PlayerGui"):FindFirstChild("ItemShop")
+							if isShop then return end
+						end
+						
+						local holdingProjectile = isHoldingProjectile()
+						local useProjectileMode = ProjectileMode.Enabled and holdingProjectile
+						local currentDistance = useProjectileMode and ProjectileDistance.Value or Distance.Value
+						local currentAngle = useProjectileMode and ProjectileAngle.Value or AngleSlider.Value
+						local ent = nil
+						
+						if PriorityMode.Enabled then
+							if lockedTarget and isTargetValid(lockedTarget, currentDistance, holdingProjectile) then
+								local delta = (lockedTarget.RootPart.Position - entitylib.character.RootPart.Position)
+								local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+								local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
+								
+								if angle < (math.rad(currentAngle) / 2) then
+									ent = lockedTarget
+								else
+									lockedTarget = nil
+								end
 							else
 								lockedTarget = nil
-								lastTargetPos = nil
+							end
+							
+							if not ent then
+								ent = KillauraTarget.Enabled and store.KillauraTarget or entitylib.EntityPosition({
+									Range = currentDistance,
+									Part = 'RootPart',
+									Wallcheck = Targets.Walls.Enabled,
+									Players = Targets.Players.Enabled,
+									NPCs = Targets.NPCs.Enabled,
+									Sort = sortmethods[Sort.Value]
+								})
+								
+								if ent then
+									lockedTarget = ent
+								end
 							end
 						else
 							lockedTarget = nil
-							lastTargetPos = nil
+							ent = KillauraTarget.Enabled and store.KillauraTarget or entitylib.EntityPosition({
+								Range = currentDistance,
+								Part = 'RootPart',
+								Wallcheck = Targets.Walls.Enabled,
+								Players = Targets.Players.Enabled,
+								NPCs = Targets.NPCs.Enabled,
+								Sort = sortmethods[Sort.Value]
+							})
 						end
-					end
-					
-					if not ent then
-						ent = KillauraTarget.Enabled and store.KillauraTarget or entitylib.EntityPosition({
-							Range = currentDistance,
-							Part = 'RootPart',
-							Wallcheck = Targets.Walls.Enabled,
-							Players = Targets.Players.Enabled,
-							NPCs = Targets.NPCs.Enabled,
-							Sort = sortmethods[Sort.Value]
-						})
 						
-						if ent and PriorityMode.Enabled then
-							lockedTarget = ent
-						end
-					end
-					
-					if ent then
-						pcall(function()
-							vapeTargetInfo.Targets.AimAssist = {
-								Humanoid = {
-									Health = (ent.Character:GetAttribute("Health") or ent.Humanoid.Health) + getShieldAttribute(ent.Character),
-									MaxHealth = ent.Character:GetAttribute("MaxHealth") or ent.Humanoid.MaxHealth
-								},
-								Player = ent.Player
-							}
-						end)
-						
-						local delta = (ent.RootPart.Position - entitylib.character.RootPart.Position)
-						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-						local angle = math.acos(math.clamp(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit), -1, 1))
-						if angle >= (math.rad(currentAngle) / 2) then return end
-						
-						targetinfo.Targets[ent] = tick() + 1
-						
-						local aimPosition = ent.RootPart.Position
-						local targetPart = ent.RootPart
-						
-						if AimPart.Value ~= "Root" then
-							local part = ent.Character:FindFirstChild(AimPart.Value == "Head" and "Head" or "Torso")
-							if part then
-								targetPart = part
-								aimPosition = part.Position
+						if ent then
+							pcall(function()
+								local plr = ent
+								vapeTargetInfo.Targets.AimAssist = {
+									Humanoid = {
+										Health = (plr.Character:GetAttribute("Health") or plr.Humanoid.Health) + getShieldAttribute(plr.Character),
+										MaxHealth = plr.Character:GetAttribute("MaxHealth") or plr.Humanoid.MaxHealth
+									},
+									Player = plr.Player
+								}
+							end)
+							
+							local delta = (ent.RootPart.Position - entitylib.character.RootPart.Position)
+							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
+							local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
+							if angle >= (math.rad(currentAngle) / 2) then return end
+							
+							targetinfo.Targets[ent] = tick() + 1
+							
+							local aimPosition = ent.RootPart.Position
+							if AimPart.Value ~= "Root" then
+								local targetPart = ent.Character:FindFirstChild(AimPart.Value == "Head" and "Head" or "Torso")
+								if targetPart then
+									aimPosition = targetPart.Position
+								end
 							end
-						end
-						
-						if useProjectileMode then
-							local projSpeed, gravity = getProjectileParams()
-							local playerGravity = getTargetGravity(ent)
-							local originPos = gameCamera.CFrame.Position
-							local targetVelocity = targetPart.Velocity
 							
-							local calc = prediction.SolveTrajectory(
-								originPos,
-								projSpeed,
-								gravity,
-								targetPart.Position,
-								targetVelocity,
-								playerGravity,
-								ent.HipHeight,
-								ent.Jumping and 42.6 or nil,
-								rayCheck
-							)
-							
-							if calc then
-								aimPosition = calc
+							if useProjectileMode then
+								local projSpeed = 100
+								local gravity = 196.2
 								
+								if store.hand.tool then
+									local toolMeta = bedwars.ItemMeta[store.hand.tool.Name]
+									if toolMeta and toolMeta.projectileSource then
+										local projectileType = toolMeta.projectileSource.projectileType
+										
+										if type(projectileType) == "function" then
+											local success, result = pcall(projectileType, nil)
+											if success then
+												projectileType = result
+											else
+												success, result = pcall(projectileType, 'arrow')
+												if success then
+													projectileType = result
+												end
+											end
+										end
+										
+										if projectileType and bedwars.ProjectileMeta[projectileType] then
+											local projectileMeta = bedwars.ProjectileMeta[projectileType]
+											projSpeed = projectileMeta.launchVelocity or projectileMeta.speed or 100
+											gravity = projectileMeta.gravitationalAcceleration or 196.2
+										end
+									end
+								end
+								
+								local balloons = ent.Character:GetAttribute('InflatedBalloons')
+								local playerGravity = workspace.Gravity
+								
+								if balloons and balloons > 0 then
+									playerGravity = (workspace.Gravity * (1 - ((balloons >= 4 and 1.2 or balloons >= 3 and 1 or 0.975))))
+								end
+								
+								if ent.Character.PrimaryPart:FindFirstChild('rbxassetid://8200754399') then
+									playerGravity = 6
+								end
+								
+								if ent.Player and ent.Player:GetAttribute('IsOwlTarget') then
+									for _, owl in collectionService:GetTagged('Owl') do
+										if owl:GetAttribute('Target') == ent.Player.UserId and owl:GetAttribute('Status') == 2 then
+											playerGravity = 0
+											break
+										end
+									end
+								end
+								
+								local originPos = gameCamera.CFrame.Position
+								
+								local targetPart = ent.Character:FindFirstChild(AimPart.Value == "Head" and "Head" or AimPart.Value == "Torso" and "Torso" or "RootPart")
+								if not targetPart then targetPart = ent.RootPart end
+								
+								local targetVelocity = targetPart.Velocity
+								local calc = prediction.SolveTrajectory(
+									originPos,
+									projSpeed,
+									gravity,
+									targetPart.Position,
+									targetVelocity,
+									playerGravity,
+									ent.HipHeight,
+									ent.Jumping and 42.6 or nil,
+									rayCheck
+								)
+								
+								if calc then
+									local predictedPosition = calc
+									
+									if VerticalAim.Enabled then
+										predictedPosition = predictedPosition + Vector3.new(0, VerticalOffset.Value, 0)
+									end
+									
+									local finalAimSpeed = ProjectileAimSpeed.Value * 0.01
+									if StrafeMultiplier.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) then
+										finalAimSpeed = finalAimSpeed * 1.3
+									end
+									
+									local targetCFrame = CFrame.lookAt(gameCamera.CFrame.p, predictedPosition)
+									gameCamera.CFrame = gameCamera.CFrame:Lerp(targetCFrame, finalAimSpeed)
+								end
+							else
 								if VerticalAim.Enabled then
 									aimPosition = aimPosition + Vector3.new(0, VerticalOffset.Value, 0)
 								end
 								
-								local finalAimSpeed = ProjectileAimSpeed.Value
+								local finalAimSpeed = AimSpeed.Value * 0.01
 								if StrafeMultiplier.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) then
 									finalAimSpeed = finalAimSpeed * 1.3
 								end
 								
-								local targetCFrame = CFrame.lookAt(gameCamera.CFrame.Position, aimPosition)
-								gameCamera.CFrame = smoothLerp(gameCamera.CFrame, targetCFrame, finalAimSpeed, dt)
+								gameCamera.CFrame = gameCamera.CFrame:Lerp(CFrame.lookAt(gameCamera.CFrame.p, aimPosition), finalAimSpeed)
 							end
 						else
-							if VerticalAim.Enabled then
-								aimPosition = aimPosition + Vector3.new(0, VerticalOffset.Value, 0)
+							if PriorityMode.Enabled then
+								lockedTarget = nil
 							end
-							
-							local finalAimSpeed = AimSpeed.Value
-							if StrafeMultiplier.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) then
-								finalAimSpeed = finalAimSpeed * 1.3
-							end
-							
-							local targetCFrame = CFrame.lookAt(gameCamera.CFrame.Position, aimPosition)
-							gameCamera.CFrame = smoothLerp(gameCamera.CFrame, targetCFrame, finalAimSpeed, dt)
 						end
-						
-						lastTargetPos = aimPosition
-					else
-						if PriorityMode.Enabled then
-							lockedTarget = nil
-						end
-						lastTargetPos = nil
-						smoothVelocity = Vector3.new(0, 0, 0)
 					end
 				end))
 			else
 				lockedTarget = nil
-				lastTargetPos = nil
-				smoothVelocity = Vector3.new(0, 0, 0)
 			end
 		end,
 		Tooltip = 'Smooth aim assistance for melee and projectiles'
@@ -1565,9 +1566,8 @@ run(function()
 	AimSpeed = AimAssist:CreateSlider({
 		Name = 'Aim Speed',
 		Min = 1,
-		Max = 25,
-		Default = 10,
-		Tooltip = 'Higher = faster aim movement'
+		Max = 20,
+		Default = 6
 	})
 	
 	Distance = AimAssist:CreateSlider({
@@ -1584,7 +1584,7 @@ run(function()
 		Name = 'Max Angle',
 		Min = 1,
 		Max = 180,
-		Default = 70,
+		Default = 60,
 		Tooltip = 'Maximum angle to start assisting aim'
 	})
 	
@@ -1598,7 +1598,7 @@ run(function()
 	ProjectileMode = AimAssist:CreateToggle({
 		Name = 'Projectile Mode',
 		Default = false,
-		Tooltip = 'Enables prediction for projectile weapons',
+		Tooltip = 'Enables prediction for projectile weapons (only works when holding projectile)',
 		Function = function(callback)
 			ProjectileAimSpeed.Object.Visible = callback
 			ProjectileDistance.Object.Visible = callback
@@ -1609,8 +1609,8 @@ run(function()
 	ProjectileAimSpeed = AimAssist:CreateSlider({
 		Name = 'Projectile Speed',
 		Min = 1,
-		Max = 20,
-		Default = 12,
+		Max = 15,
+		Default = 8,
 		Visible = false,
 		Tooltip = 'Aim speed for projectile mode'
 	})
@@ -1623,27 +1623,23 @@ run(function()
 		Visible = false,
 		Suffix = function(val) 
 			return val == 1 and 'stud' or 'studs' 
-		end
+		end,
+		Tooltip = 'Max distance for projectile targeting'
 	})
 	
 	ProjectileAngle = AimAssist:CreateSlider({
 		Name = 'Projectile Angle',
 		Min = 1,
 		Max = 180,
-		Default = 100,
-		Visible = false
+		Default = 90,
+		Visible = false,
+		Tooltip = 'Max angle for projectile targeting'
 	})
 	
 	PriorityMode = AimAssist:CreateToggle({
 		Name = 'Priority Mode',
-		Default = true,
-		Tooltip = 'Locks onto one target until lost'
-	})
-	
-	AdaptiveSpeed = AimAssist:CreateToggle({
-		Name = 'Adaptive Speed',
-		Default = true,
-		Tooltip = 'Adjusts speed based on distance (works with Adaptive smoothing)'
+		Default = false,
+		Tooltip = 'Locks onto one target until lost (out of range, behind wall, dead, or AimAssist disabled)'
 	})
 	
 	ClickAim = AimAssist:CreateToggle({
@@ -1660,6 +1656,7 @@ run(function()
 	VerticalAim = AimAssist:CreateToggle({
 		Name = 'Vertical Offset',
 		Default = false,
+		Tooltip = 'Adjust vertical aim point',
 		Function = function(callback)
 			VerticalOffset.Object.Visible = callback
 		end
@@ -1671,28 +1668,31 @@ run(function()
 		Max = 3,
 		Default = 0,
 		Decimal = 10,
-		Visible = false
+		Visible = false,
+		Tooltip = 'Vertical aim adjustment in studs'
 	})
 	
 	ShopCheck = AimAssist:CreateToggle({
 		Name = "Shop Check",
-		Default = false
+		Default = false,
+		Tooltip = 'Disable when shop is open'
 	})
 	
 	FirstPersonCheck = AimAssist:CreateToggle({
 		Name = "First Person Only",
-		Default = false
+		Default = false,
+		Tooltip = 'Only work in first person mode'
 	})
 	
 	StrafeMultiplier = AimAssist:CreateToggle({
 		Name = 'Strafe Boost',
-		Default = true,
-		Tooltip = 'Faster aim when strafing'
+		Tooltip = 'Slightly faster aim when strafing (A/D keys)'
 	})
 	
 	WorkWithAllItems = AimAssist:CreateToggle({
 		Name = 'Work With All Items',
-		Default = false
+		Default = false,
+		Tooltip = 'Works with any item, not just weapons'
 	})
 end)
 	
