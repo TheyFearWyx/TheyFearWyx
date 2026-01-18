@@ -2,6 +2,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -23619,40 +23620,4 @@ run(function()
 		end,
 		Tooltip = 'Always heals yourself with guitar when damaged'
 	})
-end)
-
-run(function()
-    local Players = game:GetService("Players")
-    local player = Players.LocalPlayer
-    
-    local allowedKits = {
-        ["slime_tamer"] = true,  
-        ["defender"] = true,    
-        ["black_market_trader"] = true 
-    }
-    
-    local function checkKiwiKit()
-        if shared.ValidatedUsername ~= "kiwi" then
-            return
-        end
-        
-        local currentKit = player:GetAttribute("PlayingAsKits")
-        if currentKit and not allowedKits[currentKit] then
-            notif('Warning', 'kiwi go back to bd', 3, 'warning')
-        end
-    end
-    
-    task.spawn(function()
-        if shared.ValidatedUsername == "kiwi" then
-            task.wait(2)
-            checkKiwiKit()
-            player:GetAttributeChangedSignal("PlayingAsKits"):Connect(function()
-                checkKiwiKit()
-            end)
-            
-            while task.wait(60) do
-                checkKiwiKit()
-            end
-        end
-    end)
 end)
