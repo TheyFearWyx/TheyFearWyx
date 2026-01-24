@@ -2355,58 +2355,85 @@ end)
 
 run(function()
     local oldranks = {}
+    local activeLoops = {}
+    local updateDebounce = {}
+    
     KitRender = vape.Categories.Utility:CreateModule({
-        Name = "KitRender",
-        Tooltip = "Allows you to see everyone's kit during kit phase (sqauds ranked!)",
-        Function = function(callback)    
+        Name = "KitRender (sqauds)",
+        Function = function(callback)   
             if callback then
-            task.spawn(function()
-                local teams = lplr.PlayerGui:WaitForChild("MatchDraftApp")
-                if teams then
-                    for i, obj in teams:GetDescendants() do
-                        if obj.Name == "PlayerRender" and obj.Parent.Parent.Parent.Parent.Parent.Name == "MatchDraftTeamCardRow" then
-                            local Rank = obj.Parent:FindFirstChild('3')
-                            local userId = string.match(obj.Image, "id=(%d+)")
-                            obj:SetAttribute("AeroV4KitRenderUserID",tonumber(userId))
-                            local id = (tonumber(userId))
-                            local method = id
-                            local plr = playersService:GetPlayerByUserId(method)
-                            if not plr then
-                                return
-                            end
-                            local render = bedwars.BedwarsKitMeta[plr:GetAttribute("PlayingAsKits")]  or bedwars.BedwarsKitMeta.none
-                            Rank.Image = render.renderImage
-                            KitRender:Clean(plr:GetAttributeChangedSignal("PlayingAsKits"):Connect(function()
-                                render = bedwars.BedwarsKitMeta[plr:GetAttribute("PlayingAsKits")]  or bedwars.BedwarsKitMeta.none
+                task.spawn(function()
+                    local teams = lplr.PlayerGui:WaitForChild("MatchDraftApp")
+                    if teams then
+                        local function setupKitRender(obj)
+                            if obj.Name == "PlayerRender" and obj.Parent.Parent.Parent.Parent.Parent.Name == "MatchDraftTeamCardRow" then
+                                local Rank = obj.Parent:FindFirstChild('3')
+                                if not Rank then return end
+                                
+                                local userId = string.match(obj.Image, "id=(%d+)")
+                                if not userId then return end
+                                
+                                obj:SetAttribute("AeroV4KitRenderUserID", tonumber(userId))
+                                local id = tonumber(userId)
+                                local plr = playersService:GetPlayerByUserId(id)
+                                
+                                if not plr then return end
+                                
+                                local loopKey = plr.UserId
+                                
+                                if activeLoops[loopKey] then
+                                    activeLoops[loopKey] = nil
+                                end
+                                
+                                local render = bedwars.BedwarsKitMeta[plr:GetAttribute("PlayingAsKits")] or bedwars.BedwarsKitMeta.none
+                                if not oldranks[Rank] then
+                                    oldranks[Rank] = Rank.Image
+                                end
                                 Rank.Image = render.renderImage
-                            end))
-                            Rank:SetAttribute("AeroV4KitRenderWM",true)
+                                Rank:SetAttribute("AeroV4KitRenderWM", true)
+                                
+                                activeLoops[loopKey] = true
+                                
+                                KitRender:Clean(plr:GetAttributeChangedSignal("PlayingAsKits"):Connect(function()
+                                    if not activeLoops[loopKey] or not KitRender.Enabled then return end
+                                    
+                                    local currentTick = tick()
+                                    
+                                    if not updateDebounce[loopKey] or (currentTick - updateDebounce[loopKey]) >= 0.1 then
+                                        updateDebounce[loopKey] = currentTick
+                                        
+                                        if Rank and Rank.Parent then
+                                            render = bedwars.BedwarsKitMeta[plr:GetAttribute("PlayingAsKits")] or bedwars.BedwarsKitMeta.none
+                                            Rank.Image = render.renderImage
+                                        else
+                                            activeLoops[loopKey] = nil
+                                            updateDebounce[loopKey] = nil
+                                        end
+                                    end
+                                end))
+                            end
                         end
+                        
+                        for i, obj in teams:GetDescendants() do
+                            if KitRender.Enabled then
+                                setupKitRender(obj)
+                            end
+                        end
+                        
+                        KitRender:Clean(teams.DescendantAdded:Connect(function(obj)
+                            if KitRender.Enabled then
+                                setupKitRender(obj)
+                            end
+                        end))
                     end
-                    KitRender:Clean(teams.DescendantAdded:Connect(function(obj)
-                        if obj.Name == "PlayerRender" and obj.Parent.Parent.Parent.Parent.Parent.Name == "MatchDraftTeamCardRow" then
-                            local Rank = obj.Parent:FindFirstChild('3')
-                            local userId = string.match(obj.Image, "id=(%d+)")
-                            obj:SetAttribute("AeroV4KitRenderUserID",tonumber(userId))
-                            local id = (tonumber(userId))
-                            local method = id
-                            local plr = playersService:GetPlayerByUserId(method)
-                            if not plr then
-                                return
-                            end
-                            local render = bedwars.BedwarsKitMeta[plr:GetAttribute("PlayingAsKits")]  or bedwars.BedwarsKitMeta.none
-                            Rank.Image = render.renderImage
-                            KitRender:Clean(plr:GetAttributeChangedSignal("PlayingAsKits"):Connect(function()
-                                render = bedwars.BedwarsKitMeta[plr:GetAttribute("PlayingAsKits")]  or bedwars.BedwarsKitMeta.none
-                                Rank.Image = render.renderImage
-                            end))
-                            Rank:SetAttribute("AeroV4KitRenderWM",true)
-                        end
-                    end))
-                end
-            end)
+                end)
             else
-                for i,v in lplr.PlayerGui.MatchDraftApp:GetDescendants() do
+                for key, _ in pairs(activeLoops) do
+                    activeLoops[key] = nil
+                end
+                table.clear(updateDebounce)
+                
+                for i, v in lplr.PlayerGui.MatchDraftApp:GetDescendants() do
                     if v:GetAttribute("AeroV4KitRenderWM") then
                         if oldranks[v] then
                             v.Image = oldranks[v]
@@ -2416,7 +2443,8 @@ run(function()
                     end
                 end
             end
-        end
+        end,
+        Tooltip = "Allows you to see everyone's kit during kit phase (squads ranked!)"
     })
 end)
 	
