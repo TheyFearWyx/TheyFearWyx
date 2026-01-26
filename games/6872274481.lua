@@ -1,4 +1,5 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local run = function(func)
 	func()
 end
@@ -6971,10 +6972,9 @@ run(function()
 							end
 						end
 
-						local isLassoProjectile = projmeta.projectile == 'lasso'
 						local isTurretProjectile = projmeta.projectile:find('turret') or projmeta.projectile:find('vulcan') or false
 
-						if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') and not isFrostStaffProjectile and not isLassoProjectile and not isTurretProjectile then
+						if (not OtherProjectiles.Enabled) and not projmeta.projectile:find('arrow') and not isFrostStaffProjectile and not isTurretProjectile then
 							hovering = false
 							return old(...)
 						end
@@ -7010,46 +7010,6 @@ run(function()
 						end
 
 						if store.hand and store.hand.tool then
-							if projmeta.projectile == 'lasso' then
-								local targetPos = plr[TargetPart.Value].Position
-								local targetVelocity = plr[TargetPart.Value].Velocity
-								local distance = (targetPos - offsetpos).Magnitude
-								local timeToReach = distance / projSpeed
-								
-								local predictedPos = targetPos + (targetVelocity * timeToReach)
-								
-								local horizontalOffset = Vector3.new(predictedPos.X - targetPos.X, 0, predictedPos.Z - targetPos.Z)
-								if horizontalOffset.Magnitude > 10 then
-									horizontalOffset = horizontalOffset.Unit * 10
-									predictedPos = Vector3.new(
-										targetPos.X + horizontalOffset.X,
-										predictedPos.Y,
-										targetPos.Z + horizontalOffset.Z
-									)
-								end
-								
-								local dropCompensation = 0.34 * gravity * (timeToReach * timeToReach)
-								
-								local distanceMultiplier = math.min(distance / 50, 2.5)  
-								local finalArc = dropCompensation * distanceMultiplier
-								
-								predictedPos = predictedPos + Vector3.new(0, finalArc, 0)
-								
-								local newlook = CFrame.new(offsetpos, predictedPos)
-								
-								if targetinfo and targetinfo.Targets then
-									targetinfo.Targets[plr] = tick() + 1
-								end
-								
-								hovering = false
-								return {
-									initialVelocity = newlook.LookVector * projSpeed,
-									positionFrom = offsetpos,
-									deltaT = lifetime,
-									gravitationalAcceleration = gravity,
-									drawDurationSeconds = 5
-								}
-							end
 							if isTurretProjectile then
 								local targetPos = plr[TargetPart.Value].Position
 								local targetVelocity = plr[TargetPart.Value].Velocity
