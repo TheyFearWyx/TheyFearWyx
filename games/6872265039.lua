@@ -327,12 +327,14 @@ run(function()
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	local CollectionService = game:GetService("CollectionService")
 	local LP = Players.LocalPlayer
-	local FLAME_IMAGE = "rbxassetid://116217418854521"
+	local FLAME_IMAGE = "rbxassetid://7101948108"
 	local BedwarsImageId = require(ReplicatedStorage.TS.image["image-id"]).BedwarsImageId
 	local TITLE_STROKE_TRANSP = nil
 	local WIN_TEXT_SIZE = 19
-	local WIN_TEXT_PULL_LEFT = 16
-	local TITLE_TEXT_SIZE = 14 
+	local WIN_TEXT_PULL_LEFT = 14
+	local ORIGINAL_NAMETAG_SCALE = 1.17
+	local TITLE_TEXT_SIZE = 14
+	local FLAME_ASPECT_RATIO = 0.8  
 	
 	local KnitClient
 	do
@@ -369,12 +371,38 @@ run(function()
 	local function findLocalOriginalNametag(char)
 		local head = char:FindFirstChild("Head")
 		if not head then return nil end
+		
+		local direct = head:FindFirstChild("Nametag")
+		if direct and direct:IsA("BillboardGui") then
+			return direct
+		end
+		
 		for _, gui in ipairs(CollectionService:GetTagged("EntityNameTag")) do
 			if gui:IsA("BillboardGui") and (gui.Adornee == head or gui:IsDescendantOf(char)) then
 				return gui
 			end
 		end
+		
 		return nil
+	end
+	
+	local function scaleOriginalNametagSlightly(originalGui)
+		if not originalGui then return end
+		
+		local attrW = originalGui:GetAttribute("BaseSizeW")
+		local attrH = originalGui:GetAttribute("BaseSizeH")
+		
+		if type(attrW) ~= "number" or type(attrH) ~= "number" then
+			originalGui:SetAttribute("BaseSizeW", originalGui.Size.X.Scale)
+			originalGui:SetAttribute("BaseSizeH", originalGui.Size.Y.Scale)
+			attrW = originalGui.Size.X.Scale
+			attrH = originalGui.Size.Y.Scale
+		end
+		
+		local w = (attrW or originalGui.Size.X.Scale) * ORIGINAL_NAMETAG_SCALE
+		local h = (attrH or originalGui.Size.Y.Scale) * ORIGINAL_NAMETAG_SCALE
+		
+		originalGui.Size = UDim2.fromScale(w, h)
 	end
 	
 	local function hideMiddleNameAndLevel(originalGui)
@@ -453,8 +481,8 @@ run(function()
 				local name = string.lower(d.Name or "")
 				
 				if name:find("title") or name:find("playertitle") or name:find("role") then
-					d.TextScaled = false
-					d.TextSize = TITLE_TEXT_SIZE
+					d.TextScaled = true
+					
 					if TITLE_STROKE_TRANSP ~= nil then
 						d.TextStrokeTransparency = TITLE_STROKE_TRANSP
 					end
@@ -499,7 +527,7 @@ run(function()
 		row.Name = "Row"
 		row.BackgroundTransparency = 1
 		row.AnchorPoint = Vector2.new(0.5, 0.5)
-		row.Position = UDim2.fromScale(0.56, 0.5)
+		row.Position = UDim2.fromScale(0.525, 0.5)
 		row.Size = UDim2.fromScale(1, 1)
 		row.Parent = main
 		
@@ -522,13 +550,13 @@ run(function()
 		local spacer = Instance.new("Frame")
 		spacer.Name = "TwoSpace"
 		spacer.BackgroundTransparency = 1
-		spacer.Size = UDim2.fromScale(0.05, 1)
+		spacer.Size = UDim2.fromScale(0.065, 1)
 		spacer.Parent = row
 		
 		local winGroup = Instance.new("Frame")
 		winGroup.Name = "WinGroup"
 		winGroup.BackgroundTransparency = 1
-		winGroup.Size = UDim2.fromScale(0.36, 0.95)
+		winGroup.Size = UDim2.fromScale(0.255, 1.05)
 		winGroup.Parent = row
 		
 		local flame = Instance.new("ImageLabel")
@@ -537,11 +565,11 @@ run(function()
 		flame.Image = FLAME_IMAGE
 		flame.AnchorPoint = Vector2.new(0, 0.5)
 		flame.Position = UDim2.fromScale(0, 0.5)
-		flame.Size = UDim2.fromScale(0.46, 1.0)
+		flame.Size = UDim2.fromScale(0.275, 1.05)
 		flame.Parent = winGroup
 		
 		local fAspect = Instance.new("UIAspectRatioConstraint")
-		fAspect.AspectRatio = 1
+		fAspect.AspectRatio = FLAME_ASPECT_RATIO  
 		fAspect.Parent = flame
 		
 		local num = Instance.new("TextLabel")
@@ -558,7 +586,7 @@ run(function()
 		
 		num.AnchorPoint = Vector2.new(0, 0.5)
 		num.Position = UDim2.new(0.46, -WIN_TEXT_PULL_LEFT, 0.5, 0)
-		num.Size = UDim2.new(0.54, 0, 1, 0)
+		num.Size = UDim2.new(0.54, 0, 0.94, 0)
 		num.Parent = winGroup
 		
 		return bb
@@ -571,7 +599,7 @@ run(function()
 			num.TextSize = WIN_TEXT_SIZE
 			num.AnchorPoint = Vector2.new(0, 0.5)
 			num.Position = UDim2.new(0.46, -WIN_TEXT_PULL_LEFT, 0.5, 0)
-			num.Size = UDim2.new(0.54, 0, 1, 0)
+			num.Size = UDim2.new(0.54, 0, 0.94, 0)
 		end
 	end
 	
@@ -620,6 +648,7 @@ run(function()
 				
 				local original = findLocalOriginalNametag(char)
 				if original then
+					scaleOriginalNametagSlightly(original)
 					hideMiddleNameAndLevel(original)
 					hideOldWinStreakOnly(original)
 					hideOldRankIconOnly(original)
@@ -654,6 +683,12 @@ run(function()
 		if LP.Character then
 			local original = findLocalOriginalNametag(LP.Character)
 			if original then
+				local attrW = original:GetAttribute("BaseSizeW")
+				local attrH = original:GetAttribute("BaseSizeH")
+				if attrW and attrH then
+					original.Size = UDim2.fromScale(attrW, attrH)
+				end
+				
 				for _, d in ipairs(original:GetDescendants()) do
 					if d:IsA("GuiObject") then
 						d.Visible = true
@@ -664,7 +699,7 @@ run(function()
 	end
 	
 	OGNameTags = vape.Categories.Render:CreateModule({
-		Name = 'OGNameTags(lobby)',
+		Name = 'OGNameTags',
 		Function = function(callback)
 			if callback then
 				if LP.Character then
@@ -678,23 +713,53 @@ run(function()
 				cleanup()
 			end
 		end,
-		Tooltip = 'Customizes your nametag with rank icon and winstreak (koli bullshit)'
+		Tooltip = 'Custom nametag with rank icon and winstreak (lobby only)'
 	})
 	
 	local TitleSizeSlider = OGNameTags:CreateSlider({
-		Name = 'Title Text Size',
-		Min = 8,
-		Max = 30,
-		Default = 14,
+		Name = 'Title Scale',
+		Min = 1.0,
+		Max = 1.5,
+		Default = 1.17,
+		Decimal = 100,
 		Function = function(val)
-			TITLE_TEXT_SIZE = val
-			if LP.Character then
+			ORIGINAL_NAMETAG_SCALE = val
+			if LP.Character and OGNameTags.Enabled then
 				local original = findLocalOriginalNametag(LP.Character)
 				if original then
+					scaleOriginalNametagSlightly(original)
 					fixRoleTextScaling(original)
 				end
 			end
-		end
+		end,
+		Tooltip = 'Scale original nametag to make title/role bigger'
+	})
+	
+	local FlameWidthSlider = OGNameTags:CreateSlider({
+		Name = 'Flame Width',
+		Min = 0.5,
+		Max = 1.2,
+		Default = 0.8,
+		Decimal = 100,
+		Function = function(val)
+			FLAME_ASPECT_RATIO = val
+			if LP.Character and OGNameTags.Enabled then
+				local head = LP.Character:FindFirstChild("Head")
+				if head then
+					local gui = head:FindFirstChild("LocalRankStreakGui")
+					if gui then
+						local flame = gui:FindFirstChild("WinFlame", true)
+						if flame and flame:IsA("ImageLabel") then
+							local aspect = flame:FindFirstChildOfClass("UIAspectRatioConstraint")
+							if aspect then
+								aspect.AspectRatio = val
+							end
+						end
+					end
+				end
+			end
+		end,
+		Tooltip = 'Adjust flame icon width (lower = skinnier)'
 	})
 end)
 
