@@ -1,5 +1,4 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
---This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local mainapi = {
 	Categories = {},
 	GUIColor = {
@@ -278,12 +277,14 @@ local function createMobileButton(buttonapi, position)
 	button.Position = UDim2.fromOffset(position.X, position.Y)
 	button.AnchorPoint = Vector2.new(0.5, 0.5)
 	button.BackgroundColor3 = buttonapi.Enabled and Color3.new(0, 0.7, 0) or Color3.new()
-	button.BackgroundTransparency = 0.5
+	button.BackgroundTransparency = 0.5  
 	button.Text = buttonapi.Name
 	button.TextColor3 = Color3.new(1, 1, 1)
 	button.TextScaled = true
 	button.Font = Enum.Font.Gotham
+	button.TextTransparency = 0  
 	button.Parent = mainapi.gui
+	
 	local buttonconstraint = Instance.new('UITextSizeConstraint')
 	buttonconstraint.MaxTextSize = 16
 	buttonconstraint.Parent = button
@@ -500,7 +501,7 @@ components = {
 	Button = function(optionsettings, children, api)
 		local button = Instance.new('TextButton')
 		button.Name = optionsettings.Name..'Button'
-		button.Size = UDim2.new(1, 0, 0, 31)
+		button.Size = UDim2.new(1, 0, 0, 35) 
 		button.BackgroundColor3 = color.Dark(children.BackgroundColor3, optionsettings.Darker and 0.02 or 0)
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = false
@@ -546,6 +547,12 @@ components = {
 			Value = optionsettings.DefaultValue or 1,
 			Opacity = optionsettings.DefaultOpacity or 1,
 			Rainbow = false,
+			Default = {
+				Hue = optionsettings.DefaultHue or 0.44,
+				Sat = optionsettings.DefaultSat or 1,
+				Value = optionsettings.DefaultValue or 1,
+				Opacity = optionsettings.DefaultOpacity or 1
+			},
 			Index = 0
 		}
 		
@@ -1159,6 +1166,7 @@ components = {
 			Type = 'Slider',
 			Value = optionsettings.Default or optionsettings.Min,
 			Max = optionsettings.Max,
+			Default = optionsettings.Default or optionsettings.Min,
 			Index = getTableSize(api.Options)
 		}
 		
@@ -2086,6 +2094,7 @@ components = {
 		local optionapi = {
 			Type = 'Toggle',
 			Enabled = false,
+			Default = optionsettings.Default or false,
 			Index = getTableSize(api.Options)
 		}
 		
@@ -2181,6 +2190,10 @@ components = {
 			ValueMin = optionsettings.DefaultMin or optionsettings.Min,
 			ValueMax = optionsettings.DefaultMax or 10,
 			Max = optionsettings.Max,
+			Default = {
+				Min = optionsettings.DefaultMin or optionsettings.Min,
+				Max = optionsettings.DefaultMax or 10
+			},
 			Index = getTableSize(api.Options)
 		}
 		
@@ -3782,6 +3795,126 @@ function mainapi:CreateCategory(categorysettings)
 		bindcovertext.FontFace = uipallet.Font
 		bindcovertext.Parent = bindcover
 		bind.Parent = modulebutton
+		
+		local pinbutton = Instance.new('TextButton')
+		pinbutton.Name = 'Pin'
+		pinbutton.Size = UDim2.fromOffset(20, 21)
+		pinbutton.Position = UDim2.new(1, -60, 0, 9)
+		pinbutton.AnchorPoint = Vector2.new(1, 0)
+		pinbutton.BackgroundColor3 = Color3.new(1, 1, 1)
+		pinbutton.BackgroundTransparency = 0.92
+		pinbutton.BorderSizePixel = 0
+		pinbutton.AutoButtonColor = false
+		pinbutton.Visible = false
+		pinbutton.Text = ''
+		addCorner(pinbutton, UDim.new(0, 4))
+		addTooltip(pinbutton, 'Pin to top of category')
+		
+		local pinicon = Instance.new('ImageLabel')
+		pinicon.Name = 'Icon'
+		pinicon.Size = UDim2.fromOffset(12, 12)
+		pinicon.Position = UDim2.new(0.5, -6, 0, 5)
+		pinicon.BackgroundTransparency = 1
+		pinicon.Image = getcustomasset('newvape/assets/new/pin.png')
+		pinicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
+		pinicon.Parent = pinbutton
+		pinbutton.Parent = modulebutton
+		
+		moduleapi.Pinned = false
+		moduleapi.FavoriteButton = nil
+		
+		local function togglePin()
+			moduleapi.Pinned = not moduleapi.Pinned
+			pinicon.ImageColor3 = moduleapi.Pinned and uipallet.Text or color.Dark(uipallet.Text, 0.43)
+			
+			if moduleapi.Pinned then
+				if mainapi.Categories.Favorites and mainapi.Categories.Favorites.Children then
+					local favButton = Instance.new('TextButton')
+					favButton.Name = modulesettings.Name
+					favButton.Size = UDim2.fromOffset(220, 40)
+					favButton.BackgroundColor3 = moduleapi.Enabled and color.Light(uipallet.Main, 0.02) or uipallet.Main
+					favButton.BorderSizePixel = 0
+					favButton.AutoButtonColor = false
+					favButton.Text = '            '..modulesettings.Name
+					favButton.TextXAlignment = Enum.TextXAlignment.Left
+					favButton.TextColor3 = moduleapi.Enabled and uipallet.Text or color.Dark(uipallet.Text, 0.16)
+					favButton.TextSize = 14
+					favButton.FontFace = uipallet.Font
+					
+					local favGradient = Instance.new('UIGradient')
+					favGradient.Rotation = 90
+					favGradient.Enabled = moduleapi.Enabled
+					favGradient.Parent = favButton
+					
+					local tag = Instance.new('TextLabel')
+					tag.Size = UDim2.fromOffset(55, 12)
+					tag.Position = UDim2.new(1, -60, 0, 2)
+					tag.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+					tag.BackgroundTransparency = 0.3
+					tag.BorderSizePixel = 0
+					tag.Text = categorysettings.Name
+					tag.TextColor3 = Color3.fromRGB(140, 140, 140)
+					tag.TextSize = 8
+					tag.FontFace = uipallet.Font
+					tag.Parent = favButton
+					addCorner(tag, UDim.new(0, 3))
+					
+					favButton.MouseButton1Click:Connect(function()
+						moduleapi:Toggle()
+					end)
+					
+					favButton.MouseButton2Click:Connect(function()
+						local cat = mainapi.Categories[categorysettings.Name]
+						if cat then
+							if not cat.Expanded then
+								cat:Expand()
+							end
+							cat.Object.Visible = true
+							modulechildren.Visible = true
+						end
+					end)
+					
+					favButton.Parent = mainapi.Categories.Favorites.Children
+					moduleapi.FavoriteButton = favButton
+				end
+			else
+				if moduleapi.FavoriteButton then
+					moduleapi.FavoriteButton:Destroy()
+					moduleapi.FavoriteButton = nil
+				end
+			end
+			
+			local sorting = {}
+			for _, v in mainapi.Modules do
+				if v.Category == categorysettings.Name then
+					table.insert(sorting, v)
+				end
+			end
+			
+			table.sort(sorting, function(a, b)
+				if a.Pinned ~= b.Pinned then
+					return a.Pinned
+				end
+				return a.Name < b.Name
+			end)
+			
+			for i, v in sorting do
+				v.Index = i
+				v.Object.LayoutOrder = i
+				v.Children.LayoutOrder = i
+			end
+		end
+		
+		pinbutton.MouseEnter:Connect(function()
+			pinicon.ImageColor3 = moduleapi.Pinned and uipallet.Text or color.Dark(uipallet.Text, 0.16)
+		end)
+		pinbutton.MouseLeave:Connect(function()
+			pinicon.ImageColor3 = moduleapi.Pinned and uipallet.Text or color.Dark(uipallet.Text, 0.43)
+		end)
+		pinbutton.MouseButton1Click:Connect(function()
+			togglePin()
+		end)
+		
 		local dotsbutton = Instance.new('TextButton')
 		dotsbutton.Name = 'Dots'
 		dotsbutton.Size = UDim2.fromOffset(25, 40)
@@ -3860,6 +3993,16 @@ function mainapi:CreateCategory(categorysettings)
 			dots.ImageColor3 = self.Enabled and Color3.fromRGB(50, 50, 50) or color.Light(uipallet.Main, 0.37)
 			bindicon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
 			bindtext.TextColor3 = color.Dark(uipallet.Text, 0.43)
+			
+			if self.FavoriteButton then
+				self.FavoriteButton.TextColor3 = self.Enabled and uipallet.Text or color.Dark(uipallet.Text, 0.16)
+				self.FavoriteButton.BackgroundColor3 = self.Enabled and color.Light(uipallet.Main, 0.02) or uipallet.Main
+				local favGradient = self.FavoriteButton:FindFirstChildOfClass('UIGradient')
+				if favGradient then
+					favGradient.Enabled = self.Enabled
+				end
+			end
+			
 			if not self.Enabled then
 				for _, v in self.Connections do
 					v:Disconnect()
@@ -3912,7 +4055,52 @@ function mainapi:CreateCategory(categorysettings)
 			modulechildren.Visible = not modulechildren.Visible
 		end)
 		dotsbutton.MouseButton2Click:Connect(function()
-			modulechildren.Visible = not modulechildren.Visible
+			local existingReset = modulebutton:FindFirstChild('ResetCover')
+			if existingReset then
+				for _, option in moduleapi.Options do
+					if option.Default ~= nil then
+						if option.Type == 'Slider' then
+							option:SetValue(option.Default, nil, true)
+						elseif option.Type == 'ColorSlider' then
+							option:SetColor(option.Default.Hue, option.Default.Sat, option.Default.Value, option.Default.Opacity)
+						elseif option.Type == 'Toggle' then
+							if option.Enabled ~= option.Default then
+								option:Toggle()
+							end
+						elseif option.Type == 'TwoSlider' then
+							option:SetValue(false, option.Default.Min) 
+							option:SetValue(true, option.Default.Max)  
+						end
+					end
+				end
+				existingReset:Destroy()
+				return
+			end
+			
+			local resetCover = Instance.new('ImageLabel')
+			resetCover.Name = 'ResetCover'
+			resetCover.Size = UDim2.fromOffset(180, 40)
+			resetCover.BackgroundTransparency = 1
+			resetCover.Image = getcustomasset('newvape/assets/new/bindbkg.png')
+			resetCover.ScaleType = Enum.ScaleType.Slice
+			resetCover.SliceCenter = Rect.new(0, 0, 141, 40)
+			resetCover.Parent = modulebutton
+			
+			local resetText = Instance.new('TextLabel')
+			resetText.Name = 'Text'
+			resetText.Size = UDim2.new(1, -10, 1, -3)
+			resetText.BackgroundTransparency = 1
+			resetText.Text = 'RIGHT CLICK AGAIN TO RESET'
+			resetText.TextColor3 = uipallet.Text
+			resetText.TextSize = 11
+			resetText.FontFace = uipallet.Font
+			resetText.Parent = resetCover
+		
+			task.delay(3, function()
+				if resetCover and resetCover.Parent then
+					resetCover:Destroy()
+				end
+			end)
 		end)
 		modulebutton.MouseEnter:Connect(function()
 			hovered = true
@@ -3921,6 +4109,7 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			pinbutton.Visible = hovered or modulechildren.Visible or moduleapi.Pinned
 		end)
 		modulebutton.MouseLeave:Connect(function()
 			hovered = false
@@ -3929,6 +4118,7 @@ function mainapi:CreateCategory(categorysettings)
 				modulebutton.BackgroundColor3 = uipallet.Main
 			end
 			bind.Visible = #moduleapi.Bind > 0 or hovered or modulechildren.Visible
+			pinbutton.Visible = hovered or modulechildren.Visible or moduleapi.Pinned
 		end)
 		modulebutton.MouseButton1Click:Connect(function()
 			moduleapi:Toggle()
@@ -3936,51 +4126,6 @@ function mainapi:CreateCategory(categorysettings)
 		modulebutton.MouseButton2Click:Connect(function()
 			modulechildren.Visible = not modulechildren.Visible
 		end)
-		if inputService.TouchEnabled then
-			local heldbutton = false
-			modulebutton.MouseButton1Down:Connect(function()
-				heldbutton = true
-				local holdtime, holdpos = tick(), inputService:GetMouseLocation()
-				repeat
-					heldbutton = (inputService:GetMouseLocation() - holdpos).Magnitude < 3
-					task.wait()
-				until (tick() - holdtime) > 1 or not heldbutton or not clickgui.Visible
-				if heldbutton and clickgui.Visible then
-					if mainapi.ThreadFix then
-						setthreadidentity(8)
-					end
-					clickgui.Visible = false
-					tooltip.Visible = false
-					mainapi:BlurCheck()
-					for _, mobileButton in mainapi.Modules do
-						if mobileButton.Bind.Button then
-							mobileButton.Bind.Button.Visible = true
-						end
-					end
-
-					local touchconnection
-					touchconnection = inputService.InputBegan:Connect(function(inputType)
-						if inputType.UserInputType == Enum.UserInputType.Touch then
-							if mainapi.ThreadFix then
-								setthreadidentity(8)
-							end
-							createMobileButton(moduleapi, inputType.Position + Vector3.new(0, guiService:GetGuiInset().Y, 0))
-							clickgui.Visible = true
-							mainapi:BlurCheck()
-							for _, mobileButton in mainapi.Modules do
-								if mobileButton.Bind.Button then
-									mobileButton.Bind.Button.Visible = false
-								end
-							end
-							touchconnection:Disconnect()
-						end
-					end)
-				end
-			end)
-			modulebutton.MouseButton1Up:Connect(function()
-				heldbutton = false
-			end)
-		end
 		windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 			if mainapi.ThreadFix then
 				setthreadidentity(8)
@@ -4058,6 +4203,7 @@ function mainapi:CreateCategory(categorysettings)
 	})
 
 	categoryapi.Object = window
+	categoryapi.Children = children 
 	self.Categories[categorysettings.Name] = categoryapi
 
 	return categoryapi
@@ -4355,16 +4501,17 @@ function mainapi:CreateCategoryList(categorysettings)
 	local windowlist = Instance.new('UIListLayout')
 	windowlist.SortOrder = Enum.SortOrder.LayoutOrder
 	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	windowlist.Padding = UDim.new(0, 3)
+	windowlist.Padding = UDim.new(0, 6)
 	windowlist.Parent = children
 	local windowlisttwo = Instance.new('UIListLayout')
 	windowlisttwo.SortOrder = Enum.SortOrder.LayoutOrder
 	windowlisttwo.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	windowlisttwo.Padding = UDim.new(0, 3)
 	windowlisttwo.Parent = childrentwo
 	local addbkg = Instance.new('Frame')
 	addbkg.Name = 'Add'
-	addbkg.Size = UDim2.fromOffset(200, 31)
-	addbkg.Position = UDim2.fromOffset(10, 45)
+	addbkg.Size = UDim2.fromOffset(200, 35)
+	addbkg.Position = UDim2.fromOffset(10, 50)
 	addbkg.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 	addbkg.Parent = children
 	addCorner(addbkg)
@@ -4395,9 +4542,10 @@ function mainapi:CreateCategoryList(categorysettings)
 	addbutton.ImageTransparency = 0.3
 	addbutton.Parent = addbkg
 	local cursedpadding = Instance.new('Frame')
-	cursedpadding.Size = UDim2.fromOffset()
+	cursedpadding.Size = UDim2.fromOffset(0, 5)
 	cursedpadding.BackgroundTransparency = 1
 	cursedpadding.Parent = children
+	cursedpadding.LayoutOrder = -1
 	categorysettings.Function = categorysettings.Function or function() end
 
 	function categoryapi:ChangeValue(val)
@@ -4440,7 +4588,7 @@ function mainapi:CreateCategoryList(categorysettings)
 			if categorysettings.Profiles then
 				local object = Instance.new('TextButton')
 				object.Name = v.Name
-				object.Size = UDim2.fromOffset(200, 33)
+				object.Size = UDim2.fromOffset(200, 38)
 				object.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 				object.AutoButtonColor = false
 				object.Text = ''
@@ -4464,7 +4612,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				objecttitle.Parent = object
 				local dotsbutton = Instance.new('TextButton')
 				dotsbutton.Name = 'Dots'
-				dotsbutton.Size = UDim2.fromOffset(25, 33)
+				dotsbutton.Size = UDim2.fromOffset(25, 38)
 				dotsbutton.Position = UDim2.new(1, -25, 0, 0)
 				dotsbutton.BackgroundTransparency = 1
 				dotsbutton.Text = ''
@@ -4472,7 +4620,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				local dots = Instance.new('ImageLabel')
 				dots.Name = 'Dots'
 				dots.Size = UDim2.fromOffset(3, 16)
-				dots.Position = UDim2.fromOffset(10, 9)
+				dots.Position = UDim2.fromOffset(10, 11)
 				dots.BackgroundTransparency = 1
 				dots.Image = getcustomasset('newvape/assets/new/dots.png')
 				dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
@@ -4481,7 +4629,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				addTooltip(bind, 'Click to bind')
 				bind.Name = 'Bind'
 				bind.Size = UDim2.fromOffset(20, 21)
-				bind.Position = UDim2.new(1, -30, 0, 6)
+				bind.Position = UDim2.new(1, -30, 0, 9)
 				bind.AnchorPoint = Vector2.new(1, 0)
 				bind.BackgroundColor3 = Color3.new(1, 1, 1)
 				bind.BackgroundTransparency = 0.92
@@ -4526,7 +4674,7 @@ function mainapi:CreateCategoryList(categorysettings)
 				end)
 				local bindcover = Instance.new('ImageLabel')
 				bindcover.Name = 'Cover'
-				bindcover.Size = UDim2.fromOffset(154, 33)
+				bindcover.Size = UDim2.fromOffset(154, 38)
 				bindcover.BackgroundTransparency = 1
 				bindcover.Visible = false
 				bindcover.Image = getcustomasset('newvape/assets/new/bindbkg.png')
@@ -5335,10 +5483,21 @@ function mainapi:CreateNotification(title, text, duration, type)
 		progress.Size = UDim2.new(1, -13, 0, 2)
 		progress.Position = UDim2.new(0, 3, 1, -4)
 		progress.ZIndex = 5
-		progress.BackgroundColor3 =
-			type == 'alert' and Color3.fromRGB(250, 50, 56)
-			or type == 'warning' and Color3.fromRGB(236, 129, 43)
-			or Color3.fromRGB(220, 220, 220)
+		
+		if type == nil and mainapi.Notifications.Enabled and mainapi.NotificationColor then
+			progress.BackgroundColor3 = Color3.fromHSV(
+				mainapi.NotificationColor.Hue,
+				mainapi.NotificationColor.Sat,
+				mainapi.NotificationColor.Value
+			)
+		else
+			progress.BackgroundColor3 = 
+				type == 'alert' and Color3.fromRGB(250, 50, 56)
+				or type == 'warning' and Color3.fromRGB(236, 129, 43)
+				or (mainapi.NotificationColor and Color3.fromHSV(mainapi.NotificationColor.Hue, mainapi.NotificationColor.Sat, mainapi.NotificationColor.Value))
+				or Color3.fromRGB(220, 220, 220)
+		end
+		
 		progress.BorderSizePixel = 0
 		progress.Parent = notification
 		if tween.Tween then
@@ -5461,6 +5620,14 @@ function mainapi:Load(skipgui, profile)
 			end
 			object:SetBind(v.Bind)
 			object.Object.Bind.Visible = #v.Bind > 0
+			if v.Pinned and not object.Pinned then
+				local pinButton = object.Object:FindFirstChild('Pin')
+				if pinButton then
+					for _, connection in getconnections(pinButton.MouseButton1Click) do
+						connection:Fire()
+					end
+				end
+			end
 		end
 
 		for i, v in savedata.Legit do
@@ -5584,7 +5751,8 @@ function mainapi:Save(newprofile)
 		savedata.Modules[i] = {
 			Enabled = v.Enabled,
 			Bind = v.Bind.Button and {Mobile = true, X = v.Bind.Button.Position.X.Offset, Y = v.Bind.Button.Position.Y.Offset} or v.Bind,
-			Options = mainapi:SaveOptions(v, true)
+			Options = mainapi:SaveOptions(v, true),
+			Pinned = v.Pinned or false
 		}
 	end
 
@@ -5654,7 +5822,7 @@ gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 gui.IgnoreGuiInset = true
 gui.OnTopOfCoreBlur = true
 if mainapi.ThreadFix then
-	gui.Parent = cloneref(game:GetService('CoreGui'))--(gethui and gethui()) or cloneref(game:GetService('CoreGui'))
+	gui.Parent = cloneref(game:GetService('CoreGui'))
 else
 	gui.Parent = cloneref(game:GetService('Players')).LocalPlayer.PlayerGui
 	gui.ResetOnSpawn = false
@@ -5765,6 +5933,12 @@ end))
 mainapi:CreateGUI()
 mainapi.Categories.Main:CreateDivider()
 mainapi:CreateCategory({
+	Name = 'Favorites',
+	Icon = getcustomasset('newvape/assets/new/pin.png'),
+	Size = UDim2.fromOffset(15, 15)
+})
+
+mainapi:CreateCategory({
 	Name = 'Combat',
 	Icon = getcustomasset('newvape/assets/new/combaticon.png'),
 	Size = UDim2.fromOffset(13, 14)
@@ -5791,16 +5965,6 @@ mainapi:CreateCategory({
 	Size = UDim2.fromOffset(15, 14)
 })
 mainapi:CreateCategory({
-	Name = 'BoostFPS',
-	Icon = getcustomasset('newvape/assets/new/pin.png'),
-	Size = UDim2.fromOffset(20, 18)
-})
-mainapi:CreateCategory({
-	Name = 'Kits',
-	Icon = getcustomasset('newvape/assets/new/vape.png'),
-	Size = UDim2.fromOffset(20, 18)
-})
-mainapi:CreateCategory({
 	Name = 'World',
 	Icon = getcustomasset('newvape/assets/new/worldicon.png'),
 	Size = UDim2.fromOffset(14, 14)
@@ -5814,6 +5978,16 @@ mainapi:CreateCategory({
 	Name = 'Minigames',
 	Icon = getcustomasset('newvape/assets/new/miniicon.png'),
 	Size = UDim2.fromOffset(19, 12)
+})
+mainapi:CreateCategory({
+	Name = 'Kits',
+	Icon = getcustomasset('newvape/assets/new/vape.png'),
+	Size = UDim2.fromOffset(20, 18)
+})
+mainapi:CreateCategory({
+	Name = 'BoostFPS',
+	Icon = getcustomasset('newvape/assets/new/edit.png'),
+	Size = UDim2.fromOffset(20, 18)
 })
 mainapi.Categories.Main:CreateDivider('misc')
 
@@ -5877,15 +6051,654 @@ mainapi:Clean(friends.Update)
 mainapi:Clean(friends.ColorUpdate)
 
 --[[
-	Profiles
+	Profiles 
 ]]
-mainapi:CreateCategoryList({
+local profilesCategory = mainapi:CreateCategoryList({
 	Name = 'Profiles',
 	Icon = getcustomasset('newvape/assets/new/profilesicon.png'),
 	Size = UDim2.fromOffset(17, 10),
 	Position = UDim2.fromOffset(12, 16),
 	Placeholder = 'Type name',
 	Profiles = true
+})
+
+local function getPremadeProfiles()
+	local premades = {}
+	local currentGame = tostring(mainapi.Place)
+	
+	if not isfolder('newvape/profiles/premade') then
+		makefolder('newvape/profiles/premade')
+	end
+	
+	for _, file in pairs(listfiles('newvape/profiles/premade')) do
+		local fileName = file:gsub('\\', '/'):match('.*/(.+)%.txt$')
+		if fileName and fileName:find(currentGame) then
+			local profileName = fileName:gsub(currentGame, ''):gsub('^(.-)$', '%1')
+			if profileName ~= '' then
+				table.insert(premades, profileName)
+			end
+		end
+	end
+	
+	return premades
+end
+
+local premadeWindow = Instance.new('Frame')
+premadeWindow.Name = 'PremadeConfigsGUI'
+premadeWindow.Size = UDim2.fromOffset(680, 480)
+premadeWindow.Position = UDim2.new(0.5, -340, 0.5, -240)
+premadeWindow.BackgroundColor3 = uipallet.Main
+premadeWindow.Visible = false
+premadeWindow.Parent = scaledgui
+addBlur(premadeWindow)
+addCorner(premadeWindow)
+makeDraggable(premadeWindow)
+local premadeModal = Instance.new('TextButton')
+premadeModal.BackgroundTransparency = 1
+premadeModal.Text = ''
+premadeModal.Modal = true
+premadeModal.Parent = premadeWindow
+local premadeHeaderGradient = Instance.new('Frame')
+premadeHeaderGradient.Name = 'HeaderGradient'
+premadeHeaderGradient.Size = UDim2.new(1, 0, 0, 50)
+premadeHeaderGradient.BackgroundColor3 = Color3.fromRGB(5, 134, 105)
+premadeHeaderGradient.BackgroundTransparency = 0.92
+premadeHeaderGradient.BorderSizePixel = 0
+premadeHeaderGradient.Parent = premadeWindow
+addCorner(premadeHeaderGradient)
+local premadeIcon = Instance.new('ImageLabel')
+premadeIcon.Name = 'Icon'
+premadeIcon.Size = UDim2.fromOffset(20, 12)
+premadeIcon.Position = UDim2.fromOffset(20, 19)
+premadeIcon.BackgroundTransparency = 1
+premadeIcon.Image = getcustomasset('newvape/assets/new/profilesicon.png')
+premadeIcon.ImageColor3 = Color3.fromRGB(5, 200, 160)
+premadeIcon.Parent = premadeWindow
+local premadeTitle = Instance.new('TextLabel')
+premadeTitle.Name = 'Title'
+premadeTitle.Size = UDim2.new(1, -100, 0, 22)
+premadeTitle.Position = UDim2.fromOffset(50, 14)
+premadeTitle.BackgroundTransparency = 1
+premadeTitle.Text = 'Preset Configs'
+premadeTitle.TextXAlignment = Enum.TextXAlignment.Left
+premadeTitle.TextColor3 = Color3.new(1, 1, 1)
+premadeTitle.TextSize = 15
+premadeTitle.FontFace = uipallet.FontSemiBold
+premadeTitle.Parent = premadeWindow
+local premadeSubtitle = Instance.new('TextLabel')
+premadeSubtitle.Name = 'Subtitle'
+premadeSubtitle.Size = UDim2.new(1, -100, 0, 14)
+premadeSubtitle.Position = UDim2.fromOffset(50, 32)
+premadeSubtitle.BackgroundTransparency = 1
+premadeSubtitle.Text = 'Curated configurations from known players'
+premadeSubtitle.TextXAlignment = Enum.TextXAlignment.Left
+premadeSubtitle.TextColor3 = color.Dark(uipallet.Text, 0.4)
+premadeSubtitle.TextSize = 11
+premadeSubtitle.FontFace = uipallet.Font
+premadeSubtitle.Parent = premadeWindow
+local premadeClose = addCloseButton(premadeWindow)
+premadeClose.MouseButton1Click:Connect(function()
+	tween:Tween(premadeWindow, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		Position = UDim2.new(0.5, -340, 0.5, -220),
+		Size = UDim2.fromOffset(640, 440)
+	})
+	task.wait(0.15)
+	premadeWindow.Visible = false
+end)
+
+local premadeContentBg = Instance.new('Frame')
+premadeContentBg.Size = UDim2.new(1, -28, 1, -78)
+premadeContentBg.Position = UDim2.fromOffset(14, 58)
+premadeContentBg.BackgroundColor3 = color.Dark(uipallet.Main, 0.03)
+premadeContentBg.BorderSizePixel = 0
+premadeContentBg.Parent = premadeWindow
+addCorner(premadeContentBg, UDim.new(0, 6))
+local premadeChildren = Instance.new('ScrollingFrame')
+premadeChildren.Name = 'Children'
+premadeChildren.Size = UDim2.fromOffset(380, 388)
+premadeChildren.Position = UDim2.fromOffset(8, 8)
+premadeChildren.BackgroundTransparency = 1
+premadeChildren.BorderSizePixel = 0
+premadeChildren.ScrollBarThickness = 3
+premadeChildren.ScrollBarImageColor3 = Color3.fromRGB(5, 134, 105)
+premadeChildren.ScrollBarImageTransparency = 0.5
+premadeChildren.CanvasSize = UDim2.new()
+premadeChildren.Parent = premadeContentBg
+local premadeList = Instance.new('UIListLayout')
+premadeList.SortOrder = Enum.SortOrder.LayoutOrder
+premadeList.Padding = UDim.new(0, 6)
+premadeList.Parent = premadeChildren
+local previewPanel = Instance.new('Frame')
+previewPanel.Name = 'PreviewPanel'
+previewPanel.Size = UDim2.fromOffset(244, 388)
+previewPanel.Position = UDim2.fromOffset(396, 8)
+previewPanel.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+previewPanel.BorderSizePixel = 0
+previewPanel.Parent = premadeContentBg
+addCorner(previewPanel, UDim.new(0, 6))
+local previewTitle = Instance.new('TextLabel')
+previewTitle.Name = 'Title'
+previewTitle.Size = UDim2.fromOffset(220, 20)
+previewTitle.Position = UDim2.fromOffset(12, 12)
+previewTitle.BackgroundTransparency = 1
+previewTitle.Text = 'Preview'
+previewTitle.TextXAlignment = Enum.TextXAlignment.Left
+previewTitle.TextColor3 = uipallet.Text
+previewTitle.TextSize = 13
+previewTitle.FontFace = uipallet.FontSemiBold
+previewTitle.Parent = previewPanel
+local previewDivider = Instance.new('Frame')
+previewDivider.Size = UDim2.new(1, -24, 0, 1)
+previewDivider.Position = UDim2.fromOffset(12, 38)
+previewDivider.BackgroundColor3 = Color3.new(1, 1, 1)
+previewDivider.BackgroundTransparency = 0.93
+previewDivider.BorderSizePixel = 0
+previewDivider.Parent = previewPanel
+local previewScroll = Instance.new('ScrollingFrame')
+previewScroll.Name = 'PreviewScroll'
+previewScroll.Size = UDim2.fromOffset(220, 330)
+previewScroll.Position = UDim2.fromOffset(12, 46)
+previewScroll.BackgroundTransparency = 1
+previewScroll.BorderSizePixel = 0
+previewScroll.ScrollBarThickness = 2
+previewScroll.ScrollBarImageTransparency = 0.7
+previewScroll.CanvasSize = UDim2.new()
+previewScroll.Parent = previewPanel
+local previewList = Instance.new('UIListLayout')
+previewList.SortOrder = Enum.SortOrder.LayoutOrder
+previewList.Padding = UDim.new(0, 4)
+previewList.Parent = previewScroll
+local previewPlaceholder = Instance.new('TextLabel')
+previewPlaceholder.Size = UDim2.fromOffset(220, 100)
+previewPlaceholder.Position = UDim2.fromOffset(0, 100)
+previewPlaceholder.BackgroundTransparency = 1
+previewPlaceholder.Text = 'Select a config\nto preview settings'
+previewPlaceholder.TextColor3 = color.Dark(uipallet.Text, 0.6)
+previewPlaceholder.TextSize = 12
+previewPlaceholder.FontFace = uipallet.Font
+previewPlaceholder.Parent = previewPanel
+
+table.insert(mainapi.Windows, premadeWindow)
+
+local configColors = {
+	Color3.fromRGB(88, 101, 242),  
+	Color3.fromRGB(235, 69, 158),  
+	Color3.fromRGB(87, 242, 135),  
+	Color3.fromRGB(254, 231, 92),  
+	Color3.fromRGB(255, 115, 66),  
+	Color3.fromRGB(94, 200, 248),  
+}
+
+local function showPreview(profileName)
+	for _, child in pairs(previewScroll:GetChildren()) do
+		if child:IsA('Frame') or child:IsA('TextLabel') then
+			child:Destroy()
+		end
+	end
+	previewPlaceholder.Visible = false
+	
+	local premadeFile = 'newvape/profiles/premade/'..profileName..mainapi.Place..'.txt'
+	
+	if not isfile(premadeFile) then
+		previewPlaceholder.Visible = true
+		previewPlaceholder.Text = 'Config file not found'
+		return
+	end
+	
+	local success, configData = pcall(function()
+		return httpService:JSONDecode(readfile(premadeFile))
+	end)
+	
+	if not success or type(configData) ~= 'table' then
+		previewPlaceholder.Visible = true
+		previewPlaceholder.Text = 'Unable to load preview'
+		return
+	end
+	
+	local gameName = "BedWars"
+	local placeNames = {
+		['6872265039'] = 'Lobby ('..gameName..')',
+		['6872274481'] = 'In-Game ('..gameName..')',
+		['8444591321'] = 'Custom ('..gameName..')'
+	}
+	
+	local modulesByPlace = {}
+	local totalCount = 0
+	local enabledCount = 0
+	
+	if configData.Modules and type(configData.Modules) == 'table' then
+		for moduleName, moduleData in pairs(configData.Modules) do
+			if type(moduleData) == 'table' then
+				totalCount = totalCount + 1
+				if moduleData.Enabled then
+					enabledCount = enabledCount + 1
+					
+					local placeId = moduleData.PlaceId and tostring(moduleData.PlaceId)
+					
+					if placeId == '8444591321' then
+						placeId = '6872274481'
+					end
+				
+					if not placeId then
+						placeId = '6872274481' 
+					end
+					
+					if not modulesByPlace[placeId] then
+						modulesByPlace[placeId] = {}
+					end
+					table.insert(modulesByPlace[placeId], {
+						name = moduleName,
+						data = moduleData
+					})
+				end
+			end
+		end
+	end
+	
+	local statsFrame = Instance.new('Frame')
+	statsFrame.Size = UDim2.fromOffset(220, 60)
+	statsFrame.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+	statsFrame.Parent = previewScroll
+	addCorner(statsFrame, UDim.new(0, 4))
+	
+	local statsText = Instance.new('TextLabel')
+	statsText.Size = UDim2.fromOffset(200, 16)
+	statsText.Position = UDim2.fromOffset(10, 10)
+	statsText.BackgroundTransparency = 1
+	statsText.Text = string.format('%d Total Modules', totalCount)
+	statsText.TextXAlignment = Enum.TextXAlignment.Left
+	statsText.TextColor3 = uipallet.Text
+	statsText.TextSize = 12
+	statsText.FontFace = uipallet.FontSemiBold
+	statsText.Parent = statsFrame
+	
+	local enabledText = Instance.new('TextLabel')
+	enabledText.Size = UDim2.fromOffset(200, 14)
+	enabledText.Position = UDim2.fromOffset(10, 30)
+	enabledText.BackgroundTransparency = 1
+	enabledText.Text = string.format('%d Enabled', enabledCount)
+	enabledText.TextXAlignment = Enum.TextXAlignment.Left
+	enabledText.TextColor3 = Color3.fromRGB(87, 242, 135)
+	enabledText.TextSize = 11
+	enabledText.FontFace = uipallet.Font
+	enabledText.Parent = statsFrame
+	
+	local function formatOptionValue(key, value)
+		if key == 'Enabled' or key == 'PlaceId' or key == 'Bind' or key == 'Pinned' then
+			return nil
+		end
+	
+		if type(value) == 'boolean' then
+			return value and 'ON' or 'OFF'
+		elseif type(value) == 'number' then
+			return string.format('%.2f', value):gsub('%.?0+$', '')
+		elseif type(value) == 'string' then
+			return value ~= '' and value or nil
+		elseif type(value) == 'table' then
+			if value.Enabled ~= nil then
+				return value.Enabled and 'ON' or 'OFF'
+			elseif value.Value ~= nil then
+				return tostring(value.Value)
+			elseif value.Hue ~= nil and value.Sat ~= nil and value.Value ~= nil then
+				local color = Color3.fromHSV(value.Hue, value.Sat, value.Value)
+				return string.format('RGB(%d,%d,%d)', 
+					math.floor(color.R * 255), 
+					math.floor(color.G * 255), 
+					math.floor(color.B * 255))
+			elseif value.Value ~= nil then
+				return tostring(value.Value)
+			elseif next(value) == nil then
+				return nil
+			end
+		end
+		return nil
+	end
+	
+	local function createModuleItem(modName, moduleData)
+		local moduleFrame = Instance.new('Frame')
+		moduleFrame.Size = UDim2.fromOffset(220, 24)
+		moduleFrame.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+		moduleFrame.Parent = previewScroll
+		addCorner(moduleFrame, UDim.new(0, 4))
+		
+		local moduleButton = Instance.new('TextButton')
+		moduleButton.Size = UDim2.fromScale(1, 1)
+		moduleButton.BackgroundTransparency = 1
+		moduleButton.Text = ''
+		moduleButton.Parent = moduleFrame
+		
+		local moduleIndicator = Instance.new('Frame')
+		moduleIndicator.Size = UDim2.fromOffset(3, 16)
+		moduleIndicator.Position = UDim2.fromOffset(8, 4)
+		moduleIndicator.BackgroundColor3 = Color3.fromRGB(87, 242, 135)
+		moduleIndicator.BorderSizePixel = 0
+		moduleIndicator.Parent = moduleFrame
+		addCorner(moduleIndicator, UDim.new(1, 0))
+		
+		local moduleNameLabel = Instance.new('TextLabel')
+		moduleNameLabel.Size = UDim2.fromOffset(200, 24)
+		moduleNameLabel.Position = UDim2.fromOffset(18, 0)
+		moduleNameLabel.BackgroundTransparency = 1
+		local displayName = tostring(modName):gsub('([A-Z])', ' %1'):gsub('^%s+', '')
+		moduleNameLabel.Text = displayName
+		moduleNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		moduleNameLabel.TextColor3 = color.Dark(uipallet.Text, 0.2)
+		moduleNameLabel.TextSize = 11
+		moduleNameLabel.FontFace = uipallet.Font
+		moduleNameLabel.Parent = moduleFrame
+		
+		local tooltipText = displayName .. '\n\n'
+		local hasOptions = false
+		local optionCount = 0
+		
+		if type(moduleData.Options) == 'table' then
+			local formattedOptions = {}
+			
+			for optName, optValue in pairs(moduleData.Options) do
+				local formatted = formatOptionValue(optName, optValue)
+				if formatted then
+					local optDisplay = tostring(optName):gsub('([A-Z])', ' %1'):gsub('^%s+', '')
+					table.insert(formattedOptions, string.format('• %s: %s', optDisplay, formatted))
+					optionCount = optionCount + 1
+				end
+			end
+			
+			table.sort(formattedOptions)
+			
+			if #formattedOptions > 0 then
+				hasOptions = true
+				tooltipText = tooltipText .. table.concat(formattedOptions, '\n')
+			end
+		end
+		
+		if not hasOptions then
+			tooltipText = tooltipText .. 'No custom options configured'
+		end
+		
+		addTooltip(moduleButton, tooltipText:gsub('\n$', ''))
+		
+		moduleButton.MouseEnter:Connect(function()
+			tween:Tween(moduleFrame, uipallet.Tween, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+			})
+			moduleNameLabel.TextColor3 = uipallet.Text
+		end)
+		
+		moduleButton.MouseLeave:Connect(function()
+			tween:Tween(moduleFrame, uipallet.Tween, {
+				BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+			})
+			moduleNameLabel.TextColor3 = color.Dark(uipallet.Text, 0.2)
+		end)
+		
+		return moduleFrame
+	end
+	
+	local displayOrder = {
+		{id = '6872265039', name = 'Lobby (BedWars)'},
+		{id = '6872274481', name = 'In-Game (BedWars)'}
+	}
+	
+	local hasAnyModules = false
+	
+	for _, place in ipairs(displayOrder) do
+		local modules = modulesByPlace[place.id]
+		if modules and #modules > 0 then
+			hasAnyModules = true
+			
+			local categoryHeader = Instance.new('TextLabel')
+			categoryHeader.Size = UDim2.fromOffset(220, 20)
+			categoryHeader.BackgroundTransparency = 1
+			categoryHeader.Text = string.format('%s (%d)', place.name, #modules)
+			categoryHeader.TextXAlignment = Enum.TextXAlignment.Left
+			categoryHeader.TextColor3 = Color3.fromRGB(87, 242, 135)
+			categoryHeader.TextSize = 11
+			categoryHeader.FontFace = uipallet.FontSemiBold
+			categoryHeader.Parent = previewScroll
+			
+			for _, module in ipairs(modules) do
+				createModuleItem(module.name, module.data)
+			end
+			
+			local spacer = Instance.new('Frame')
+			spacer.Size = UDim2.fromOffset(220, 8)
+			spacer.BackgroundTransparency = 1
+			spacer.Parent = previewScroll
+		end
+	end
+	
+	if not hasAnyModules then
+		local noModulesText = Instance.new('TextLabel')
+		noModulesText.Size = UDim2.fromOffset(220, 60)
+		noModulesText.BackgroundTransparency = 1
+		noModulesText.Text = 'No enabled modules found\nin this preset'
+		noModulesText.TextColor3 = color.Dark(uipallet.Text, 0.5)
+		noModulesText.TextSize = 11
+		noModulesText.FontFace = uipallet.Font
+		noModulesText.Parent = previewScroll
+	end
+	
+	task.wait()
+	previewScroll.CanvasSize = UDim2.fromOffset(220, previewList.AbsoluteContentSize.Y + 10)
+end
+
+local function refreshPremadeWindow()
+	for _, child in pairs(premadeChildren:GetChildren()) do
+		if child:IsA('Frame') then
+			child:Destroy()
+		end
+	end
+	
+	for _, child in pairs(previewScroll:GetChildren()) do
+		if child:IsA('Frame') then
+			child:Destroy()
+		end
+	end
+	previewPlaceholder.Visible = true
+	previewPlaceholder.Text = 'Select a config\nto preview settings'
+	
+	local premades = getPremadeProfiles()
+	
+	if #premades == 0 then
+		local emptyFrame = Instance.new('Frame')
+		emptyFrame.Size = UDim2.fromOffset(380, 120)
+		emptyFrame.BackgroundTransparency = 1
+		emptyFrame.Parent = premadeChildren
+		
+		local emptyIcon = Instance.new('ImageLabel')
+		emptyIcon.Size = UDim2.fromOffset(40, 24)
+		emptyIcon.Position = UDim2.fromOffset(170, 30)
+		emptyIcon.BackgroundTransparency = 1
+		emptyIcon.Image = getcustomasset('newvape/assets/new/profilesicon.png')
+		emptyIcon.ImageColor3 = color.Dark(uipallet.Text, 0.7)
+		emptyIcon.Parent = emptyFrame
+		
+		local emptyText = Instance.new('TextLabel')
+		emptyText.Size = UDim2.fromOffset(380, 40)
+		emptyText.Position = UDim2.fromOffset(0, 65)
+		emptyText.BackgroundTransparency = 1
+		emptyText.Text = 'No premade configs available\nConfigs will appear here after downloading'
+		emptyText.TextColor3 = color.Dark(uipallet.Text, 0.5)
+		emptyText.TextSize = 13
+		emptyText.FontFace = uipallet.Font
+		emptyText.Parent = emptyFrame
+		
+		premadeChildren.CanvasSize = UDim2.fromOffset(380, 120)
+		return
+	end
+	
+	for i, profileName in ipairs(premades) do
+		local colorIndex = ((i - 1) % #configColors) + 1
+		local accentColor = configColors[colorIndex]
+		
+		local configItem = Instance.new('Frame')
+		configItem.Name = profileName
+		configItem.Size = UDim2.fromOffset(380, 68)
+		configItem.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+		configItem.Parent = premadeChildren
+		addCorner(configItem, UDim.new(0, 6))
+		
+		local configItemStroke = Instance.new('UIStroke')
+		configItemStroke.Color = accentColor
+		configItemStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		configItemStroke.Transparency = 0.85
+		configItemStroke.Parent = configItem
+		local accentBar = Instance.new('Frame')
+		accentBar.Size = UDim2.fromOffset(4, 68)
+		accentBar.BackgroundColor3 = accentColor
+		accentBar.BorderSizePixel = 0
+		accentBar.Parent = configItem
+		local accentCorner = Instance.new('UICorner')
+		accentCorner.CornerRadius = UDim.new(0, 6)
+		accentCorner.Parent = accentBar
+		
+		local configIcon = Instance.new('ImageLabel')
+		configIcon.Size = UDim2.fromOffset(22, 13)
+		configIcon.Position = UDim2.fromOffset(20, 14)
+		configIcon.BackgroundTransparency = 1
+		configIcon.Image = getcustomasset('newvape/assets/new/profilesicon.png')
+		configIcon.ImageColor3 = accentColor
+		configIcon.Parent = configItem
+		
+		local configName = Instance.new('TextLabel')
+		configName.Name = 'ConfigName'
+		configName.Size = UDim2.new(1, -140, 0, 20)
+		configName.Position = UDim2.fromOffset(52, 12)
+		configName.BackgroundTransparency = 1
+		configName.Text = profileName
+		configName.TextXAlignment = Enum.TextXAlignment.Left
+		configName.TextColor3 = uipallet.Text
+		configName.TextSize = 15
+		configName.FontFace = uipallet.FontSemiBold
+		configName.TextTruncate = Enum.TextTruncate.AtEnd
+		configName.Parent = configItem
+		
+		local configDesc = Instance.new('TextLabel')
+		configDesc.Name = 'ConfigDesc'
+		configDesc.Size = UDim2.new(1, -140, 0, 14)
+		configDesc.Position = UDim2.fromOffset(52, 34)
+		configDesc.BackgroundTransparency = 1
+		configDesc.Text = 'Curated preset • Hover to preview'
+		configDesc.TextXAlignment = Enum.TextXAlignment.Left
+		configDesc.TextColor3 = color.Dark(uipallet.Text, 0.5)
+		configDesc.TextSize = 11
+		configDesc.FontFace = uipallet.Font
+		configDesc.Parent = configItem
+		
+		local loadButton = Instance.new('TextButton')
+		loadButton.Name = 'LoadButton'
+		loadButton.Size = UDim2.fromOffset(90, 36)
+		loadButton.Position = UDim2.new(1, -100, 0, 16)
+		loadButton.BackgroundColor3 = accentColor
+		loadButton.AutoButtonColor = false
+		loadButton.Text = 'Load'
+		loadButton.TextColor3 = Color3.new(1, 1, 1)
+		loadButton.TextSize = 13
+		loadButton.FontFace = uipallet.FontSemiBold
+		loadButton.Parent = configItem
+		addCorner(loadButton, UDim.new(0, 6))
+		
+		configItem.MouseEnter:Connect(function()
+			configItemStroke.Transparency = 0.6
+			tween:Tween(configItem, uipallet.Tween, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.04)
+			})
+			showPreview(profileName)
+		end)
+		
+		configItem.MouseLeave:Connect(function()
+			configItemStroke.Transparency = 0.85
+			tween:Tween(configItem, uipallet.Tween, {
+				BackgroundColor3 = color.Light(uipallet.Main, 0.02)
+			})
+		end)
+		
+		loadButton.MouseEnter:Connect(function()
+			local brighterColor = Color3.new(
+				math.min(accentColor.R * 1.15, 1),
+				math.min(accentColor.G * 1.15, 1),
+				math.min(accentColor.B * 1.15, 1)
+			)
+			tween:Tween(loadButton, uipallet.Tween, {
+				BackgroundColor3 = brighterColor
+			})
+		end)
+		
+		loadButton.MouseLeave:Connect(function()
+			tween:Tween(loadButton, uipallet.Tween, {
+				BackgroundColor3 = accentColor
+			})
+		end)
+		
+		loadButton.MouseButton1Click:Connect(function()
+			local premadeFile = 'newvape/profiles/premade/'..profileName..mainapi.Place..'.txt'
+			
+			if isfile(premadeFile) then
+				loadButton.Text = 'Loading...'
+				loadButton.BackgroundColor3 = color.Dark(accentColor, 0.3)
+				
+				task.wait(0.1) 
+				
+				local newProfileName = profileName
+				local counter = 1
+				
+				while profilesCategory:GetValue(newProfileName) do
+					newProfileName = profileName .. '_' .. counter
+					counter = counter + 1
+				end
+				
+				local premadeData = readfile(premadeFile)
+				
+				writefile('newvape/profiles/'..newProfileName..mainapi.Place..'.txt', premadeData)
+				table.insert(mainapi.Profiles, {Name = newProfileName, Bind = {}})
+				profilesCategory:ChangeValue()
+				mainapi:Save(newProfileName)
+				mainapi:Load(true)
+				
+				tween:Tween(premadeWindow, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+					Position = UDim2.new(0.5, -340, 0.5, -220),
+					Size = UDim2.fromOffset(640, 440)
+				})
+				task.wait(0.15)
+				premadeWindow.Visible = false
+				
+				mainapi:CreateNotification('Profile Created', 'Created new profile: '..newProfileName, 3, 'info')
+			else
+				loadButton.Text = 'Error!'
+				loadButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+				task.wait(1)
+				loadButton.Text = 'Load'
+				loadButton.BackgroundColor3 = accentColor
+				mainapi:CreateNotification('Error', 'Config file not found!', 3, 'alert')
+			end
+		end)
+	end
+	
+	premadeChildren.CanvasSize = UDim2.fromOffset(380, premadeList.AbsoluteContentSize.Y)
+end
+
+profilesCategory:CreateButton({
+	Name = 'Browse Preset Configs',
+	Function = function()
+		if premadeWindow.Visible then
+			tween:Tween(premadeWindow, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.new(0.5, -340, 0.5, -220),
+				Size = UDim2.fromOffset(640, 440)
+			})
+			task.wait(0.15)
+			premadeWindow.Visible = false
+		else
+			refreshPremadeWindow()
+			premadeWindow.Position = UDim2.new(0.5, -340, 0.5, -260)
+			premadeWindow.Size = UDim2.fromOffset(640, 440)
+			premadeWindow.Visible = true
+			tween:Tween(premadeWindow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Position = UDim2.new(0.5, -340, 0.5, -240),
+				Size = UDim2.fromOffset(680, 480)
+			})
+		end
+	end,
+	Tooltip = 'Browse curated preset configurations'
 })
 
 --[[
@@ -6018,6 +6831,59 @@ guipane:CreateToggle({
 	Default = true,
 	Tooltip = 'Shows the button to change to Legit Mode'
 })
+guipane:CreateToggle({
+	Name = 'Show Mobile Button',
+	Function = function(callback)
+		if mainapi.VapeButton then
+			mainapi.VapeButton.BackgroundTransparency = callback and 0.5 or 1
+			for _, child in mainapi.VapeButton:GetChildren() do
+				if child:IsA('ImageLabel') then
+					child.ImageTransparency = callback and 0 or 1
+				end
+			end
+		end
+		
+		if mainapi.Modules then
+			for _, mobileButton in pairs(mainapi.Modules) do
+				if mobileButton.Bind and mobileButton.Bind.Button then
+					mobileButton.Bind.Button.BackgroundTransparency = callback and 0.5 or 1
+					mobileButton.Bind.Button.TextTransparency = callback and 0 or 1
+				end
+			end
+		end
+	end,
+	Default = true,
+	Tooltip = 'Shows or hides mobile button (remains clickable when hidden)'
+})
+
+local notifColorToggle = guipane:CreateToggle({
+	Name = 'Custom Notification Color',
+	Function = function(callback)
+		if not callback then
+			mainapi.NotificationColor = nil
+		end
+	end,
+	Default = false,
+	Tooltip = 'Use custom color for notifications instead of default'
+})
+
+local notifColorPicker = guipane:CreateColorSlider({
+	Name = 'Notification Color',
+	Function = function(h, s, v)
+		mainapi.NotificationColor = {Hue = h, Sat = s, Value = v}
+	end,
+	Visible = false,
+	Darker = true
+})
+
+task.spawn(function()
+	while task.wait(0.1) do
+		if notifColorPicker and notifColorPicker.Object then
+			notifColorPicker.Object.Visible = notifColorToggle.Enabled
+		end
+	end
+end)
+
 local scaleslider = {Object = {}, Value = 1}
 mainapi.Scale = guipane:CreateToggle({
 	Name = 'Auto rescale',
