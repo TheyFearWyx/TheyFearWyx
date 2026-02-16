@@ -1,6 +1,7 @@
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 --This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
+--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.
 local loadstring = function(...)
 	local res, err = loadstring(...)
 	if err and vape then
@@ -8173,4 +8174,37 @@ run(function()
         end,
         Tooltip = 'Instantly activates proximity prompts.'
     })
+end)
+
+run(function()
+	local FFlag
+	local FFlag 
+	local Value
+	FFlag = vape.Legit:CreateModule({
+		Name = "FFlag",
+		Function = function(callback)
+			if not callback then return end
+			if callback then
+				if not setfflag then vape:CreateNotification("FFlag", "your current executor is shit asf: '"..identifyexecutor().."' just doesnt support setfflag please quit", 6, "warning"); return end
+				local s, e = pcall(function()
+					local FFlags = httpService:JSONDecode(FFlag.Value)
+					for a, b in FFlags do
+						task.spawn(function()
+							local i = tostring(a)
+							local v = tostring(b)
+							setfflag(i,v)
+						end)
+					end
+				end)
+				if not s then
+					vape:CreateNotification("fflag", "error: "..e, 6, "alert")
+				end
+			end
+		end,
+		Tooltip = "edit current flags or add new flags",
+	})
+	FFlag = FFlag:CreateTextBox({
+		Name = "JSON",
+		Tooltip = 'FFlag\'s MUST EXIST to use and MUST BE IN JSON FORM',
+	})
 end)
