@@ -23828,7 +23828,7 @@ run(function()
 	end
 	
 	AutoUMA = vape.Categories.Kits:CreateModule({
-		Name = 'AutoUma',
+		Name = 'AutoUMA',
 		Function = function(callback)
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
