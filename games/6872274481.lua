@@ -23624,7 +23624,6 @@ run(function()
 	local AutoSummon
 	local TargetVisualiser
 	local PriorityDropdown
-	
 	local CollectionService = game:GetService("CollectionService")
 	local selectedTarget = nil
 	local targetOutline = nil
@@ -23634,7 +23633,6 @@ run(function()
 	local currentAffinity = nil
 	local generatorCache = {}
 	local lastCacheUpdate = 0
-	
 	local priorityOrders = {
 		['Emerald > Diamond > Iron'] = {'emerald', 'diamond', 'iron'},
 		['Diamond > Emerald > Iron'] = {'diamond', 'emerald', 'iron'},
@@ -23828,7 +23826,7 @@ run(function()
 	end
 	
 	AutoUMA = vape.Categories.Kits:CreateModule({
-		Name = 'AutoUMA',
+		Name = 'AutoUma',
 		Function = function(callback)
 			if callback then
 				old = bedwars.ProjectileController.calculateImportantLaunchValues
