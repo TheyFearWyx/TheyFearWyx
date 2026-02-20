@@ -4,6 +4,18 @@ local ACCOUNT_SYSTEM_URL = "https://raw.githubusercontent.com/poopparty/whitelis
 local KEY_PAGE_URL = "https://wrealaero.github.io/vape-keys/"
 local KEY_SECRET = "AERO_SECRET_2025"
 
+if not shared.VapeLoaded then
+    shared.VapeLoaded = true
+else
+    return
+end
+
+game:GetService("Players").LocalPlayer.OnTeleport:Connect(function(state)
+    if state == Enum.TeleportState.Started then
+        shared.VapeLoaded = nil 
+    end
+end)
+
 local function createNotification(title, text, duration)
     duration = duration or 3
     pcall(function()
@@ -289,7 +301,12 @@ local function showKeyUI()
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     screenGui.IgnoreGuiInset = true
-    screenGui.Parent = game.CoreGui
+    local success = pcall(function()
+        screenGui.Parent = game.CoreGui
+    end)
+    if not success then
+        screenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    end
 
     local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
     local frameWidth = isMobile and 340 or 420
